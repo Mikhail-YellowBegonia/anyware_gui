@@ -1,71 +1,175 @@
-# Anyware Plan (v0.3.8 -> v0.4.0)
+# Anyware Plan
 
-## Positioning
-- Anyware is a higher-level UI toolbox built on top of `GUI.py`.
-- Using Anyware is still standard Python programming, not a no-code layer.
-- Layout philosophy remains fixed-grid first (not HTML-like flexible layout).
-- Page management direction (draft):
-  - use lightweight page stack/router instead of viewport/window system in current phase
-  - prioritize full-screen page switching simplicity for novice users and AI-generated templates
+Anyware version: 0.0.1  
+Target MVP version: 0.1.0  
+Shared doc version: 0.3.8  
+Doc role: planning/architecture (tutorial is `GUI_TUTORIAL.md`)
 
-## Why Anyware
-- Reduce repetitive wiring in raw GUI scripts:
-  - focus node registration
-  - navigation links
-  - selected/focused rendering
-  - component-local state handling
-- Improve "template-first" development for AI-assisted coding.
+## 1) Positioning
+- Anyware is a high-level component layer above `GUI.py`.
+- Using Anyware still means writing real Python code.
+- Two paths remain valid:
+  - raw path: app -> `GUI.py`
+  - component path: app -> `Anyware.py` -> `GUI.py`
+- Design preference: grid-first composition, then local pixel tuning.
 
-## Scope for v0.4.0 Window
+## 2) Layer Contract
+1. `GUI.py` (engine):
+- rendering primitives, coordinate conversion, focus/nav internals, draw queues, defaults.
+- no business widget semantics.
 
-### 1) Prerequisite from GUI Core
-Anyware implementation is gated by these core capabilities:
-- active focus scope switching
-- blocker-aware directional navigation
-- cross-scope navigation semantics
+2. `Anyware.py` (components):
+- reusable widgets, page/scope composition helpers, interaction conventions.
+- wraps `GUI.py`, no reverse dependency.
 
-Current status:
-- prerequisite set completed in GUI core Track A (validated in `app_gauges_example.py`)
+3. Use-case scripts (`app_*.py`):
+- demos, template references, experimental integration.
+- prototype place before promotion.
 
-Validation testplace:
-- use `app_gauges_example.py` to iterate and validate these behaviors with real high-level widgets (gauges + button arrays) before API freeze.
+Promotion policy:
+- app feature -> `GUI.py` only if at least 2/3:
+  - repeated in multiple scenarios
+  - low-level and domain-agnostic
+  - does not significantly increase API complexity
+- otherwise app feature -> `Anyware.py`.
 
-If these are incomplete, Anyware remains prototype-only in this window.
+Out-of-scope:
+- `Sound.py` stays independent placeholder; not part of Anyware v0.1.0 MVP.
 
-### 2) Anyware v0.1 Candidate Components
+## 3) Component Universe (Planning Inventory)
+This is the full planning inventory, not the immediate MVP scope.
+
+### A. Structure / Page
+- `Page`
+- `PageStack` (`push/pop/replace`)
+- `Panel`
+- `Modal`
+- `Tabs`
+
+### B. Core Controls
+- `Label`
 - `Button`
 - `ButtonArray`
+- `Checkbox`
+- `CheckboxMenu`
+- `RadioGroup`
+- `Input` (post-MVP)
+
+### C. Display / Instrument
+- `ValueText`
+- `ProgressBar`
 - `RoundGauge`
-- `FanGauge` (N1-like indicator)
+- `FanGauge`
+- `StatusLight`
+- `TrendLine` (post-MVP)
 
-Each component should provide:
-- constructor-time style defaults
-- explicit `update(state)` and `draw()` flow
-- optional keyboard-focus integration
+### D. Feedback / Utility
+- `Toast`
+- `ConfirmDialog`
+- `Loading`
+- `CursorHint`
 
-### 3) Minimal Architecture (No Large Core Refactor)
-- Keep `GUI.py` as rendering and primitive drawing backend.
-- Add Anyware as a separate layer (class-based wrappers).
-- Avoid breaking existing function-based scripts.
+### E. Navigation Helpers
+- `FocusGroup`
+- `ScopeRouter`
+- `ShortcutMap`
 
-## Documentation Reorganization Rules
-- `GUI_FRAMEWORK.md`: core rendering/navigation API reference.
-- `subproject_anyware/anyware_plan.md`: Anyware goals, architecture, and milestone status.
-- Add one short migration note in docs:
-  - when to stay on raw `GUI.py`
-  - when to choose Anyware components
+### F. Animation Wrappers
+- `IntroSequence`
+- `Blink`
+- `SweepReveal`
+- `Typewriter`
+- `StrokeDraw`
 
-## Milestones
-- M1: Core TODO closure status reviewed (scope/blocker/cross-scope).
-- M2: Anyware v0.1 API draft frozen.
-- M3: Anyware alpha demo page implemented.
-- M4: Release decision for v0.4.0 (Go/No-Go).
+## 4) Capability Gap Review (GUI vs Anyware vs N/A)
+Method: define desired feature -> decide if current GUI can directly support -> locate missing responsibility.
 
-## Go/No-Go Criteria for Anyware in v0.4.0
-- Go:
-  - alpha demo is stable
-  - developer can assemble a medium UI page with fewer lines than raw GUI script
-  - docs are clear enough for template-based AI generation
-- No-Go:
-  - keep Anyware as design/prototype notes
-  - ship only GUI core improvements in v0.4.0
+### 4.1 Opening Animation Example: "shape draws gradually"
+Feature definition:
+- draw a line/poly progressively by `progress` in `[0, 1]`, not instant full draw.
+
+Current status:
+- can be approximated by manual frame logic, but no standard primitive for path-progress drawing.
+
+Decision:
+- missing capability is low-level and reusable -> should be in `GUI.py`.
+
+Proposed GUI additions:
+1. `draw_line_progress(p1, p2, progress, ...)`
+2. `draw_poly_progress(shape_or_vertices, progress, mode='stroke', ...)`
+
+Anyware responsibility:
+- timeline/easing/sequence orchestration (`IntroSequence`, staged animation scripting).
+
+### 4.2 Text-aware layout sizing
+Need:
+- estimate text size for predictable box/layout assembly.
+
+Current status:
+- no direct standard API for text pixel metrics.
+
+Decision:
+- add low-level metric API in `GUI.py`:
+  - `measure_text(content, ...) -> (w_px, h_px)`
+- Anyware uses this for auto-sized controls.
+
+### 4.3 Local reveal/clipping effects
+Need:
+- clip drawing in rect for reveal transitions.
+
+Decision:
+- optional for v0.1.0; if implemented, belongs to `GUI.py` (render primitive).
+
+### 4.4 Complex VFX (particle/3D-grade motion)
+Decision:
+- not in current project responsibility (N/A for v0.1.0).
+
+## 5) MVP Scope for Anyware 0.1.0
+Minimum component set:
+- `Button`
+- `ButtonArray`
+- `CheckboxMenu`
+- `RoundGauge`
+- `FanGauge`
+- `PageStack` (minimal push/pop/replace only)
+
+Minimum conventions:
+- clear separation of focus vs select
+- grid-first parameters where practical
+- conservative defaults for AI template generation
+- explicit scope integration hooks (optional, but consistent)
+
+## 6) Milestones (0.0.1 -> 0.1.0)
+M1. Baseline freeze (done in 0.0.1):
+- architecture boundary confirmed
+- component universe and gap map written
+
+M2. GUI prerequisite patch:
+- evaluate and implement `draw_*_progress` and/or `measure_text` if accepted
+- update docs and one demo
+
+M3. Anyware component implementation:
+- implement MVP components with shared style/default model
+- provide one medium-complexity page demo
+
+M4. Workflow validation:
+- run target workflow:
+  - hand-drawn layout -> natural language + rough coordinates -> AI first-pass -> limited rework -> human tuning -> verification
+
+## 7) Acceptance Criteria for Anyware 0.1.0
+Must satisfy all:
+1. A medium UI page can be assembled with fewer lines than raw GUI script.
+2. AI-generated template is logically correct on first pass:
+- coordinate type mostly correct
+- navigation and state transitions correct
+3. Remaining work is mainly human tuning/polish, not logic rewrite.
+4. Documentation clearly explains:
+- raw GUI path
+- Anyware path
+- grid/pixel conversion rules
+
+## 8) Version Changelog (Anyware)
+- 0.0.1 (2026-02-12):
+  - formalized component universe
+  - completed GUI capability gap review with ownership decisions
+  - defined 0.1.0 MVP scope, milestones, and acceptance criteria

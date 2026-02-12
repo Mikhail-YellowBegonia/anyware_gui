@@ -3,10 +3,47 @@
 Version: 0.3.8
 Last Updated: 2026-02-12
 
+## 0) Documentation Split (Shared Version)
+- This file is the **feature/planning** document.
+- Tutorial is maintained in `GUI_TUTORIAL.md`.
+- Both documents follow the same version tag (`0.3.8` currently).
+
 ## 1) Overview
 - Core is a grid-based text renderer with overlay drawing.
 - Text writes into `screen/screen_color`; each frame rasterizes to `screen_raw`.
 - Overlay queues (`line_queue`, `fillpoly_queue`) are rendered after text.
+- Architecture is layered: `GUI.py` (engine) < `Anyware.py` (high-level components) < app examples/use-case collection.
+
+## 1.1 Layer Contract (Track B Consensus)
+This project keeps two valid usage paths:
+- Raw path: apps call `GUI.py` directly for low-level control.
+- Anyware path: apps call `Anyware.py` for high-level widgets and composition.
+
+Layer responsibilities:
+- `GUI.py` (engine layer):
+  - Owns rendering primitives, coordinate system, input-to-navigation mechanism, focus internals, draw queues, and global defaults.
+  - Should not own business-oriented widgets or page-level flow semantics.
+- `Anyware.py` (component layer):
+  - Owns reusable UI component abstractions (`Button`, `Checkbox`, gauges, arrays, page helpers).
+  - Wraps `GUI.py` and provides state->view mapping plus interaction conventions.
+- Use-case collection (`app_*.py`):
+  - Owns demos, templates, and exploratory compositions.
+  - May prototype candidate components before promotion to Anyware.
+
+Dependency rule:
+- `Anyware.py` depends on `GUI.py`.
+- apps may depend on either/both.
+- `GUI.py` must not depend on `Anyware.py` or app scripts.
+
+Out-of-scope module:
+- `Sound.py` remains independent and currently placeholder-only; not in v0.4.0 core scope.
+
+Feature intake policy (from app scripts):
+- Promote code from app -> `GUI.py` only if at least two of these hold:
+  - used repeatedly in multiple scenarios/components
+  - semantically low-level and domain-agnostic
+  - adding it does not significantly increase GUI API complexity
+- Otherwise, promote app code to `Anyware.py`, not `GUI.py`.
 
 ## 2) Coordinates and Scaling
 - Text APIs: grid coordinates `(x, y)` in character cells.
@@ -147,6 +184,7 @@ Blocker mechanism:
   - blocker demonstration
   - explicit cross-scope `nav` links
   - checkbox menu interaction demo (toggle by Enter/Space)
+- Full learning path and step-by-step usage are in `GUI_TUTORIAL.md`.
 
 ## 6) Current Scope / Next
 - Track A status: completed and validated in testplace.
@@ -158,6 +196,8 @@ Blocker mechanism:
   - Prefer lightweight page list/router over viewport system for this project phase.
   - Target model: browser-like page stack (`push/pop/replace`) with full-screen scene switching.
   - Keep this as a lightweight orchestration layer above GUI core.
+- Track B status:
+  - Done (Q1+Q2+Q3): layer boundary, doc split, and AI-coding-friendly tutorial guidance completed.
 
 ## 7) v0.3.8 -> v0.4.0 Mini Plan
 Goal: close current TODOs, re-evaluate architecture with Anyware in scope, and ship a usable Anyware alpha entry.
@@ -173,16 +213,22 @@ Status: Done (2026-02-12)
 1. Re-audit project boundaries
 - Reconfirm responsibilities of `GUI.py`, app scripts, and future Anyware layer.
 - Decide what remains function-level vs what is elevated to Anyware components.
+Status:
+- Done for architecture baseline (this document section 1.1).
 
 2. Reorganize docs (md only)
 - Keep `GUI_FRAMEWORK.md` as core reference.
 - Make `subproject_anyware/anyware_plan.md` the Anyware product/architecture note.
 - Add a concise migration note for users: "raw GUI API" vs "Anyware API".
+Status:
+- Done (`GUI_FRAMEWORK.md` + `subproject_anyware/anyware_plan.md` + `GUI_TUTORIAL.md` split).
 
 3. Add anti-error guidance focused on real mistakes
 - Coordinate mixing checklist (grid vs pixel), focus vs select state, draw order checklist.
 - Acceptance:
   - At least 3 common mistakes have "symptom -> cause -> fix" entries.
+Status:
+- Done (`GUI_TUTORIAL.md` sections 7 and 9, including grid/pixel and AI-coding guidance).
 
 ### Track C: Anyware Reassessment and Early Implementation
 1. Freeze Anyware v0.1 scope
@@ -202,6 +248,8 @@ Status: Done (2026-02-12)
 - Otherwise: keep Anyware as design/prototype and release only core improvements in v0.4.0.
 
 ## 8) Change Log
+- 0.3.8 (2026-02-12): Completed Track B closure items: doc split into feature/planning + tutorial, unified versioning, and AI-coding-oriented grid-first guidance (AI as logic implementer; manual polish by player/developer).
+- 0.3.8 (2026-02-12): Recorded Track B Q1 architecture consensus: 3-layer contract (`GUI.py`/`Anyware.py`/use-cases), dependency direction, app->GUI feature intake policy, and `Sound.py` independent placeholder boundary.
 - 0.3.8 (2026-02-12): Track A marked complete after validation; documented focus/select state separation, active scope behavior, blocker rejection rules, and directional resolve order; synchronized examples section with `app_gauges_example.py` multi-scope + checklist demo.
 - 0.3.7 (2026-02-12): Kept version; cleaned docs; added poly transform APIs (`transform/rescale/rotate/add_poly_transformed`) and transform demo in `app_example.py`; added coordinate reverse helpers `px/py`; started Track A implementation with active scope, blocker APIs, and cross-scope nav target support (validated in `app_gauges_example.py` testplace); added minimal checkbox menu test (`checklist` scope) to validate mixed widgets under scope routing.
 - 0.3.6 (2026-02-12): Added AI-coding assessment and navigation pre-design notes.
