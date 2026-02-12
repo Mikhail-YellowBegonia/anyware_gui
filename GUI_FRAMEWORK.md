@@ -114,7 +114,61 @@ Resolver order:
 - Implemented: basic arrow-key navigation in single-scope mode.
 - Not implemented yet: focus hierarchy switching, blocker segments, cross-scope navigation semantics.
 
-## 7) Change Log
+## 7) v0.3.7 -> v0.4.0 Mini Plan
+Goal: close current TODOs, re-evaluate architecture with Anyware in scope, and ship a usable Anyware alpha entry.
+
+### Track A: Finish Current TODO (GUI Core)
+1. Focus hierarchy (scope switching)
+- Add active scope runtime control and scope-restricted navigation.
+- Acceptance:
+  - Demo can switch between at least two scopes (e.g., main panel + popup).
+  - Arrow navigation only affects active scope.
+
+2. Blocker segments (navigation constraints)
+- Add optional blocker list to reject blocked directional jumps.
+- Acceptance:
+  - In a demo layout, blocked direction skips to next valid target or stays in place.
+  - Behavior is stable for endpoint-touch and near-collinear cases (epsilon rules documented).
+
+3. Cross-scope link semantics
+- Define and implement cross-scope `nav` contract for explicit transitions.
+- Acceptance:
+  - One example link moves focus between scopes in a deterministic way.
+  - API behavior is documented with one copy-paste example.
+
+### Track B: Software-Engineering Review + Docs Reorganization
+1. Re-audit project boundaries
+- Reconfirm responsibilities of `GUI.py`, app scripts, and future Anyware layer.
+- Decide what remains function-level vs what is elevated to Anyware components.
+
+2. Reorganize docs (md only)
+- Keep `GUI_FRAMEWORK.md` as core reference.
+- Make `subproject_anyware/anyware_plan.md` the Anyware product/architecture note.
+- Add a concise migration note for users: "raw GUI API" vs "Anyware API".
+
+3. Add anti-error guidance focused on real mistakes
+- Coordinate mixing checklist (grid vs pixel), focus vs select state, draw order checklist.
+- Acceptance:
+  - At least 3 common mistakes have "symptom -> cause -> fix" entries.
+
+### Track C: Anyware Reassessment and Early Implementation
+1. Freeze Anyware v0.1 scope
+- Keep fixed-grid philosophy.
+- Start with a minimal component set:
+  - `Button`, `ButtonArray`, `RoundGauge`, `FanGauge`.
+
+2. Build minimal Anyware alpha
+- Implement class-based wrappers on top of current `GUI.py` without forcing a full core refactor.
+- Provide one demo script showing page assembly with those components.
+
+3. Go/No-Go checkpoint before v0.4.0
+- Go criteria:
+  - Core TODOs in Track A are complete.
+  - Anyware alpha can assemble one non-trivial page faster than raw GUI scripting.
+  - Docs reflect both paths clearly (raw API + Anyware API).
+- Otherwise: keep Anyware as design/prototype and release only core improvements in v0.4.0.
+
+## 8) Change Log
 - 0.3.7 (2026-02-12): Kept version; cleaned docs; added poly transform APIs (`transform/rescale/rotate/add_poly_transformed`) and transform demo in `app_example.py`; added coordinate reverse helpers `px/py`; retained basic arrow-key navigation phase-1 APIs.
 - 0.3.6 (2026-02-12): Added AI-coding assessment and navigation pre-design notes.
 - 0.3.5 (2026-02-12): Added global dynamic offset channels and `app_example.py` showcase.
