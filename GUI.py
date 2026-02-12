@@ -133,6 +133,9 @@ FOCUS_SYSTEM_DEFAULTS = {"scope": "default"}
 FOCUS_NODES = {}
 FOCUS_NODE_ORDER = []
 FOCUS_CURRENT_ID = None
+FOCUS_ACTIVE_SCOPE = FOCUS_SYSTEM_DEFAULTS["scope"]
+FOCUS_BLOCKERS = {}
+FOCUS_BLOCKER_ORDER = []
 # endregion
 
 # region defaults
@@ -368,6 +371,20 @@ def _normalize_focus_rect(rect):
         h = -h
     return (x, y, w, h)
 
+def _normalize_focus_scope(scope):
+    if scope is None:
+        return FOCUS_SYSTEM_DEFAULTS["scope"]
+    return str(scope)
+
+def _normalize_focus_point(point):
+    if point is None:
+        return (0.0, 0.0)
+    try:
+        x, y = point
+    except Exception:
+        return (0.0, 0.0)
+    return (float(x), float(y))
+
 def _normalize_focus_direction(direction):
     if direction is None:
         return None
@@ -382,6 +399,18 @@ def _normalize_focus_direction(direction):
         return "right"
     return None
 
+def _normalize_focus_nav_target(value):
+    if value is None:
+        return None
+    if isinstance(value, (tuple, list)) and len(value) >= 2:
+        return (None if value[0] is None else _normalize_focus_scope(value[0]), str(value[1]))
+    if isinstance(value, dict):
+        nid = value.get("id", value.get("node_id"))
+        if nid is None:
+            return None
+        return (None if value.get("scope") is None else _normalize_focus_scope(value.get("scope")), str(nid))
+    return (None, str(value))
+
 def _normalize_focus_nav(nav):
     out = {}
     if not isinstance(nav, dict):
@@ -390,8 +419,17 @@ def _normalize_focus_nav(nav):
         d = _normalize_focus_direction(k)
         if d is None or v is None:
             continue
-        out[d] = str(v)
+        target = _normalize_focus_nav_target(v)
+        if target is None:
+            continue
+        out[d] = target
     return out
+
+def _resolve_nav_target(target, current_scope):
+    if target is None:
+        return (None, None)
+    t_scope, t_id = target
+    return (_normalize_focus_scope(current_scope if t_scope is None else t_scope), str(t_id))
 
 def _focusable(node):
     if not isinstance(node, dict):
@@ -407,11 +445,101 @@ def _focus_center(rect):
     x, y, w, h = _normalize_focus_rect(rect)
     return (x + w * 0.5, y + h * 0.5)
 
+def _find_first_focus_in_scope(scope):
+    sc = _normalize_focus_scope(scope)
+    for nid in FOCUS_NODE_ORDER:
+        node = FOCUS_NODES.get(nid)
+        if node is None:
+            continue
+        if _normalize_focus_scope(node.get("scope")) != sc:
+            continue
+        if _focusable(node):
+            return nid
+    return None
+
+def _focus_scope_nodes(scope):
+    sc = _normalize_focus_scope(scope)
+    for nid in FOCUS_NODE_ORDER:
+        node = FOCUS_NODES.get(nid)
+        if node is None:
+            continue
+        if _normalize_focus_scope(node.get("scope")) != sc:
+            continue
+        if _focusable(node):
+            yield nid, node
+
+def _segment_intersects(a1, a2, b1, b2, eps=1e-6):
+    def orient(p, q, r):
+        return (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+
+    def on_segment(p, q, r):
+        return (
+            min(p[0], q[0]) - eps <= r[0] <= max(p[0], q[0]) + eps
+            and min(p[1], q[1]) - eps <= r[1] <= max(p[1], q[1]) + eps
+        )
+
+    o1 = orient(a1, a2, b1)
+    o2 = orient(a1, a2, b2)
+    o3 = orient(b1, b2, a1)
+    o4 = orient(b1, b2, a2)
+
+    if (o1 > eps and o2 < -eps or o1 < -eps and o2 > eps) and (o3 > eps and o4 < -eps or o3 < -eps and o4 > eps):
+        return True
+
+    if abs(o1) <= eps and on_segment(a1, a2, b1):
+        return True
+    if abs(o2) <= eps and on_segment(a1, a2, b2):
+        return True
+    if abs(o3) <= eps and on_segment(b1, b2, a1):
+        return True
+    if abs(o4) <= eps and on_segment(b1, b2, a2):
+        return True
+    return False
+
+def _focus_jump_blocked(p1, p2, scope):
+    sc = _normalize_focus_scope(scope)
+    a1 = _normalize_focus_point(p1)
+    a2 = _normalize_focus_point(p2)
+    if abs(a1[0] - a2[0]) <= 1e-9 and abs(a1[1] - a2[1]) <= 1e-9:
+        return False
+    for bid in FOCUS_BLOCKER_ORDER:
+        blocker = FOCUS_BLOCKERS.get(bid)
+        if blocker is None:
+            continue
+        if not bool(blocker.get("enabled", True)):
+            continue
+        if _normalize_focus_scope(blocker.get("scope")) != sc:
+            continue
+        b1 = _normalize_focus_point(blocker.get("p1"))
+        b2 = _normalize_focus_point(blocker.get("p2"))
+        if _segment_intersects(a1, a2, b1, b2):
+            return True
+    return False
+
+def set_active_focus_scope(scope, *, pick_first=True):
+    global FOCUS_ACTIVE_SCOPE, FOCUS_CURRENT_ID
+    sc = _normalize_focus_scope(scope)
+    FOCUS_ACTIVE_SCOPE = sc
+    current = FOCUS_NODES.get(FOCUS_CURRENT_ID)
+    if current is not None and _focusable(current) and _normalize_focus_scope(current.get("scope")) == sc:
+        return sc
+    if pick_first:
+        FOCUS_CURRENT_ID = _find_first_focus_in_scope(sc)
+    return sc
+
+def get_active_focus_scope(default=None):
+    if FOCUS_ACTIVE_SCOPE is None:
+        return default
+    return FOCUS_ACTIVE_SCOPE
+
 def clear_focus_nodes():
-    global FOCUS_CURRENT_ID
+    global FOCUS_CURRENT_ID, FOCUS_ACTIVE_SCOPE
     FOCUS_NODES.clear()
     FOCUS_NODE_ORDER.clear()
+    FOCUS_BLOCKERS.clear()
+    FOCUS_BLOCKER_ORDER.clear()
     FOCUS_CURRENT_ID = None
+    FOCUS_ACTIVE_SCOPE = FOCUS_SYSTEM_DEFAULTS["scope"]
 
 def add_focus_node(node_id, rect, *, enabled=True, visible=True, nav=None, scope="default"):
     global FOCUS_CURRENT_ID
@@ -422,13 +550,13 @@ def add_focus_node(node_id, rect, *, enabled=True, visible=True, nav=None, scope
         "enabled": bool(enabled),
         "visible": bool(visible),
         "nav": _normalize_focus_nav(nav),
-        "scope": str(scope) if scope is not None else FOCUS_SYSTEM_DEFAULTS["scope"],
+        "scope": _normalize_focus_scope(scope),
     }
     existed = nid in FOCUS_NODES
     FOCUS_NODES[nid] = node
     if not existed:
         FOCUS_NODE_ORDER.append(nid)
-    if FOCUS_CURRENT_ID is None and _focusable(node):
+    if FOCUS_CURRENT_ID is None and _focusable(node) and _normalize_focus_scope(node.get("scope")) == _normalize_focus_scope(FOCUS_ACTIVE_SCOPE):
         FOCUS_CURRENT_ID = nid
     return dict(node)
 
@@ -446,7 +574,7 @@ def update_focus_node(node_id, *, rect=None, enabled=None, visible=None, nav=Non
     if nav is not None:
         node["nav"] = _normalize_focus_nav(nav)
     if scope is not None:
-        node["scope"] = str(scope)
+        node["scope"] = _normalize_focus_scope(scope)
     return True
 
 def remove_focus_node(node_id):
@@ -457,12 +585,7 @@ def remove_focus_node(node_id):
     FOCUS_NODES.pop(nid, None)
     FOCUS_NODE_ORDER[:] = [x for x in FOCUS_NODE_ORDER if x != nid]
     if FOCUS_CURRENT_ID == nid:
-        FOCUS_CURRENT_ID = None
-        for cid in FOCUS_NODE_ORDER:
-            cand = FOCUS_NODES.get(cid)
-            if _focusable(cand):
-                FOCUS_CURRENT_ID = cid
-                break
+        FOCUS_CURRENT_ID = _find_first_focus_in_scope(FOCUS_ACTIVE_SCOPE)
     return True
 
 def get_focus_node(node_id):
@@ -479,13 +602,15 @@ def list_focus_nodes():
             out.append(dict(node))
     return out
 
-def set_focus(node_id):
-    global FOCUS_CURRENT_ID
+def set_focus(node_id, *, activate_scope=True):
+    global FOCUS_CURRENT_ID, FOCUS_ACTIVE_SCOPE
     nid = str(node_id)
     node = FOCUS_NODES.get(nid)
     if not _focusable(node):
         return False
     FOCUS_CURRENT_ID = nid
+    if activate_scope:
+        FOCUS_ACTIVE_SCOPE = _normalize_focus_scope(node.get("scope"))
     return True
 
 def get_focus(default=None):
@@ -496,10 +621,116 @@ def get_focus(default=None):
 def _get_focus_scope():
     current = FOCUS_NODES.get(FOCUS_CURRENT_ID)
     if isinstance(current, dict):
-        return str(current.get("scope", FOCUS_SYSTEM_DEFAULTS["scope"]))
+        return _normalize_focus_scope(current.get("scope", FOCUS_SYSTEM_DEFAULTS["scope"]))
     return FOCUS_SYSTEM_DEFAULTS["scope"]
 
-def _focus_order_fallback(direction, scope):
+def get_focus_scope(node_id=None, default=None):
+    if node_id is None:
+        node_id = FOCUS_CURRENT_ID
+    node = FOCUS_NODES.get(str(node_id))
+    if node is None:
+        return default
+    return _normalize_focus_scope(node.get("scope", FOCUS_SYSTEM_DEFAULTS["scope"]))
+
+def list_focus_scopes():
+    seen = set()
+    scopes = []
+    for _, node in FOCUS_NODES.items():
+        sc = _normalize_focus_scope(node.get("scope"))
+        if sc in seen:
+            continue
+        seen.add(sc)
+        scopes.append(sc)
+    if not scopes:
+        scopes.append(FOCUS_SYSTEM_DEFAULTS["scope"])
+    return scopes
+
+def add_focus_blocker(blocker_id, p1, p2, *, scope="default", enabled=True):
+    bid = str(blocker_id)
+    blocker = {
+        "id": bid,
+        "p1": _normalize_focus_point(p1),
+        "p2": _normalize_focus_point(p2),
+        "scope": _normalize_focus_scope(scope),
+        "enabled": bool(enabled),
+    }
+    existed = bid in FOCUS_BLOCKERS
+    FOCUS_BLOCKERS[bid] = blocker
+    if not existed:
+        FOCUS_BLOCKER_ORDER.append(bid)
+    return dict(blocker)
+
+def update_focus_blocker(blocker_id, *, p1=None, p2=None, scope=None, enabled=None):
+    bid = str(blocker_id)
+    blocker = FOCUS_BLOCKERS.get(bid)
+    if blocker is None:
+        return False
+    if p1 is not None:
+        blocker["p1"] = _normalize_focus_point(p1)
+    if p2 is not None:
+        blocker["p2"] = _normalize_focus_point(p2)
+    if scope is not None:
+        blocker["scope"] = _normalize_focus_scope(scope)
+    if enabled is not None:
+        blocker["enabled"] = bool(enabled)
+    return True
+
+def remove_focus_blocker(blocker_id):
+    bid = str(blocker_id)
+    if bid not in FOCUS_BLOCKERS:
+        return False
+    FOCUS_BLOCKERS.pop(bid, None)
+    FOCUS_BLOCKER_ORDER[:] = [x for x in FOCUS_BLOCKER_ORDER if x != bid]
+    return True
+
+def clear_focus_blockers(scope=None):
+    if scope is None:
+        FOCUS_BLOCKERS.clear()
+        FOCUS_BLOCKER_ORDER.clear()
+        return 0
+    sc = _normalize_focus_scope(scope)
+    removed = 0
+    for bid in list(FOCUS_BLOCKER_ORDER):
+        blocker = FOCUS_BLOCKERS.get(bid)
+        if blocker is None:
+            continue
+        if _normalize_focus_scope(blocker.get("scope")) != sc:
+            continue
+        remove_focus_blocker(bid)
+        removed += 1
+    return removed
+
+def list_focus_blockers(scope=None):
+    out = []
+    sc = None if scope is None else _normalize_focus_scope(scope)
+    for bid in FOCUS_BLOCKER_ORDER:
+        blocker = FOCUS_BLOCKERS.get(bid)
+        if blocker is None:
+            continue
+        if sc is not None and _normalize_focus_scope(blocker.get("scope")) != sc:
+            continue
+        out.append(dict(blocker))
+    return out
+
+def draw_focus_blockers(color, scope=None, *, thickness=1.0):
+    sc = _normalize_focus_scope(FOCUS_ACTIVE_SCOPE if scope is None else scope)
+    c_idx = _resolve_color(color)
+    count = 0
+    for bid in FOCUS_BLOCKER_ORDER:
+        blocker = FOCUS_BLOCKERS.get(bid)
+        if blocker is None:
+            continue
+        if not bool(blocker.get("enabled", True)):
+            continue
+        if _normalize_focus_scope(blocker.get("scope")) != sc:
+            continue
+        p1 = _normalize_focus_point(blocker.get("p1"))
+        p2 = _normalize_focus_point(blocker.get("p2"))
+        line_queue.append((p1[0], p1[1], p2[0], p2[1], c_idx, thickness))
+        count += 1
+    return count
+
+def _focus_order_fallback(direction, scope, current_center=None):
     if FOCUS_CURRENT_ID not in FOCUS_NODE_ORDER:
         return None
     step = -1 if direction in ("up", "left") else 1
@@ -508,7 +739,10 @@ def _focus_order_fallback(direction, scope):
     while 0 <= i < len(FOCUS_NODE_ORDER):
         nid = FOCUS_NODE_ORDER[i]
         node = FOCUS_NODES.get(nid)
-        if node is not None and str(node.get("scope", FOCUS_SYSTEM_DEFAULTS["scope"])) == scope and _focusable(node):
+        if node is not None and _normalize_focus_scope(node.get("scope", FOCUS_SYSTEM_DEFAULTS["scope"])) == _normalize_focus_scope(scope) and _focusable(node):
+            if current_center is not None and _focus_jump_blocked(current_center, _focus_center(node.get("rect", (0, 0, 0, 0))), scope):
+                i += step
+                continue
             return nid
         i += step
     return None
@@ -542,52 +776,61 @@ def _focus_score(direction, cur_center, cand_center):
     return (primary, secondary, dx * dx + dy * dy)
 
 def move_focus(direction):
-    global FOCUS_CURRENT_ID
+    global FOCUS_CURRENT_ID, FOCUS_ACTIVE_SCOPE
     d = _normalize_focus_direction(direction)
     if d is None:
         return FOCUS_CURRENT_ID
 
-    if FOCUS_CURRENT_ID is None or not _focusable(FOCUS_NODES.get(FOCUS_CURRENT_ID)):
-        for nid in FOCUS_NODE_ORDER:
-            node = FOCUS_NODES.get(nid)
-            if _focusable(node):
-                FOCUS_CURRENT_ID = nid
-                return FOCUS_CURRENT_ID
-        return None
+    scope = _normalize_focus_scope(get_active_focus_scope(FOCUS_SYSTEM_DEFAULTS["scope"]))
 
     current = FOCUS_NODES.get(FOCUS_CURRENT_ID)
-    scope = _get_focus_scope()
+    if (
+        FOCUS_CURRENT_ID is None
+        or not _focusable(current)
+        or _normalize_focus_scope(current.get("scope")) != scope
+    ):
+        FOCUS_CURRENT_ID = _find_first_focus_in_scope(scope)
+        if FOCUS_CURRENT_ID is not None:
+            return FOCUS_CURRENT_ID
+        return None
+
     nav = current.get("nav", {}) if isinstance(current, dict) else {}
-    target_id = nav.get(d)
-    if target_id is not None:
+    target_nav = nav.get(d)
+    current_center = _focus_center(current.get("rect", (0, 0, 0, 0)))
+    if target_nav is not None:
+        target_scope, target_id = _resolve_nav_target(target_nav, scope)
         target = FOCUS_NODES.get(str(target_id))
-        if target is not None and _focusable(target) and str(target.get("scope", FOCUS_SYSTEM_DEFAULTS["scope"])) == scope:
+        if (
+            target is not None
+            and _focusable(target)
+            and _normalize_focus_scope(target.get("scope", FOCUS_SYSTEM_DEFAULTS["scope"])) == target_scope
+            and (target_scope != scope or not _focus_jump_blocked(current_center, _focus_center(target.get("rect", (0, 0, 0, 0))), scope))
+        ):
             FOCUS_CURRENT_ID = str(target_id)
+            FOCUS_ACTIVE_SCOPE = target_scope
             return FOCUS_CURRENT_ID
 
-    current_center = _focus_center(current.get("rect", (0, 0, 0, 0)))
     best_id = None
     best_score = None
-    for nid in FOCUS_NODE_ORDER:
+    for nid, cand in _focus_scope_nodes(scope):
         if nid == FOCUS_CURRENT_ID:
             continue
-        cand = FOCUS_NODES.get(nid)
-        if cand is None or not _focusable(cand):
-            continue
-        if str(cand.get("scope", FOCUS_SYSTEM_DEFAULTS["scope"])) != scope:
-            continue
-        score = _focus_score(d, current_center, _focus_center(cand.get("rect", (0, 0, 0, 0))))
+        cand_center = _focus_center(cand.get("rect", (0, 0, 0, 0)))
+        score = _focus_score(d, current_center, cand_center)
         if score is None:
+            continue
+        if _focus_jump_blocked(current_center, cand_center, scope):
             continue
         if best_score is None or score < best_score:
             best_score = score
             best_id = nid
 
     if best_id is None:
-        best_id = _focus_order_fallback(d, scope)
+        best_id = _focus_order_fallback(d, scope, current_center)
 
     if best_id is not None:
         FOCUS_CURRENT_ID = best_id
+        FOCUS_ACTIVE_SCOPE = scope
     return FOCUS_CURRENT_ID
 
 def key_to_focus_direction(key):

@@ -1,9 +1,12 @@
-# Anyware Plan (v0.3.7 -> v0.4.0)
+# Anyware Plan (v0.3.8 -> v0.4.0)
 
 ## Positioning
 - Anyware is a higher-level UI toolbox built on top of `GUI.py`.
 - Using Anyware is still standard Python programming, not a no-code layer.
 - Layout philosophy remains fixed-grid first (not HTML-like flexible layout).
+- Page management direction (draft):
+  - use lightweight page stack/router instead of viewport/window system in current phase
+  - prioritize full-screen page switching simplicity for novice users and AI-generated templates
 
 ## Why Anyware
 - Reduce repetitive wiring in raw GUI scripts:
@@ -20,6 +23,12 @@ Anyware implementation is gated by these core capabilities:
 - active focus scope switching
 - blocker-aware directional navigation
 - cross-scope navigation semantics
+
+Current status:
+- prerequisite set completed in GUI core Track A (validated in `app_gauges_example.py`)
+
+Validation testplace:
+- use `app_gauges_example.py` to iterate and validate these behaviors with real high-level widgets (gauges + button arrays) before API freeze.
 
 If these are incomplete, Anyware remains prototype-only in this window.
 

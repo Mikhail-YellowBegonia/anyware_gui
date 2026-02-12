@@ -1,6 +1,6 @@
 # GUI Framework Notes
 
-Version: 0.3.7
+Version: 0.3.8
 Last Updated: 2026-02-12
 
 ## 1) Overview
@@ -77,21 +77,54 @@ All transforms are around fixed origin `(0, 0)`.
 - `add_poly_transformed(name, source_shape_or_vertices, scale=1.0, scale_x=None, scale_y=None, angle_deg=0.0, base_font_height_px=None)`
   - Register transformed vertices as a new shape.
 
-### 4.5 Focus / Arrow Navigation (Phase 1)
+### 4.5 Focus / Arrow Navigation (Phase 1, Implemented)
 - Node registry:
   - `add_focus_node(...)`, `update_focus_node(...)`, `remove_focus_node(...)`
   - `clear_focus_nodes()`, `list_focus_nodes()`, `get_focus_node(node_id)`
 - Focus pointer:
   - `set_focus(node_id)`, `get_focus(default=None)`
+  - `get_focus_scope(node_id=None, default=None)`
 - Movement:
   - `move_focus(direction)`, `key_to_focus_direction(key)`, `move_focus_by_key(key)`
 - Selection rendering:
   - `grid_rect_to_px(...)`, `draw_focus_frame(...)`
+- Scope control:
+  - `set_active_focus_scope(scope, pick_first=True)`
+  - `get_active_focus_scope(default=None)`
+  - `list_focus_scopes()`
+- Blockers:
+  - `add_focus_blocker(...)`, `update_focus_blocker(...)`, `remove_focus_blocker(...)`
+  - `clear_focus_blockers(scope=None)`, `list_focus_blockers(scope=None)`, `draw_focus_blockers(...)`
 
 Resolver order:
 1. explicit `nav` link
 2. coordinate directional nearest search
 3. registration-order fallback
+
+`nav` target forms:
+- same-scope id: `"node_id"`
+- explicit cross-scope: `{"scope": "popup", "id": "popup_btn_1"}` or `("popup", "popup_btn_1")`
+
+### 4.5b Mechanism Notes (New)
+State separation:
+- Focus state: maintained by GUI focus pointer (`get_focus()`), means "cursor is on node".
+- Select state: maintained by app logic, means "user confirmed action" (usually Enter/Space).
+- Result: "focused" and "selected" are intentionally different states.
+
+Scope mechanism:
+- Active scope controls normal directional search domain.
+- `set_active_focus_scope(scope, pick_first=True)` switches domain and can auto-pick first valid node.
+- `set_focus(node_id, activate_scope=True)` can switch active scope to the target node's scope.
+
+Directional move resolve order:
+1. explicit `nav` target (supports cross-scope)
+2. nearest directional candidate in active scope
+3. registration-order fallback in active scope
+
+Blocker mechanism:
+- Blocker is a line segment in a specific scope.
+- If jump segment (current-center -> candidate-center) intersects blocker segment, that candidate is rejected.
+- When all candidates are blocked/invalid, pointer stays or falls back by resolver rules.
 
 ### 4.6 Dynamic Offsets
 - `get_dynamic_offset(channel='default', default=0.0)`
@@ -109,32 +142,32 @@ Resolver order:
   - pattern APIs
   - focus navigation demo
   - poly transform demo (rescale + rotate)
+- `app_gauges_example.py` includes:
+  - multi-scope focus switching (`main/popup/checklist`)
+  - blocker demonstration
+  - explicit cross-scope `nav` links
+  - checkbox menu interaction demo (toggle by Enter/Space)
 
 ## 6) Current Scope / Next
-- Implemented: basic arrow-key navigation in single-scope mode.
-- Not implemented yet: focus hierarchy switching, blocker segments, cross-scope navigation semantics.
+- Track A status: completed and validated in testplace.
+- Implemented: arrow-key navigation core + active scope + blockers + cross-scope nav target format.
+- New validation case:
+  - Added a minimal checkbox menu (`checklist` scope) in `app_gauges_example.py`.
+  - Verified mixed-widget navigation route: `main -> popup -> checklist` and back with explicit cross-scope links.
+- Page management (draft):
+  - Prefer lightweight page list/router over viewport system for this project phase.
+  - Target model: browser-like page stack (`push/pop/replace`) with full-screen scene switching.
+  - Keep this as a lightweight orchestration layer above GUI core.
 
-## 7) v0.3.7 -> v0.4.0 Mini Plan
+## 7) v0.3.8 -> v0.4.0 Mini Plan
 Goal: close current TODOs, re-evaluate architecture with Anyware in scope, and ship a usable Anyware alpha entry.
 
 ### Track A: Finish Current TODO (GUI Core)
-1. Focus hierarchy (scope switching)
-- Add active scope runtime control and scope-restricted navigation.
-- Acceptance:
-  - Demo can switch between at least two scopes (e.g., main panel + popup).
-  - Arrow navigation only affects active scope.
-
-2. Blocker segments (navigation constraints)
-- Add optional blocker list to reject blocked directional jumps.
-- Acceptance:
-  - In a demo layout, blocked direction skips to next valid target or stays in place.
-  - Behavior is stable for endpoint-touch and near-collinear cases (epsilon rules documented).
-
-3. Cross-scope link semantics
-- Define and implement cross-scope `nav` contract for explicit transitions.
-- Acceptance:
-  - One example link moves focus between scopes in a deterministic way.
-  - API behavior is documented with one copy-paste example.
+Status: Done (2026-02-12)
+- [x] active scope runtime control and scope-restricted navigation
+- [x] blocker segments and blocked jump rejection
+- [x] cross-scope nav contract with deterministic demo links
+- [x] checklist-style widget validation in `app_gauges_example.py`
 
 ### Track B: Software-Engineering Review + Docs Reorganization
 1. Re-audit project boundaries
@@ -169,7 +202,8 @@ Goal: close current TODOs, re-evaluate architecture with Anyware in scope, and s
 - Otherwise: keep Anyware as design/prototype and release only core improvements in v0.4.0.
 
 ## 8) Change Log
-- 0.3.7 (2026-02-12): Kept version; cleaned docs; added poly transform APIs (`transform/rescale/rotate/add_poly_transformed`) and transform demo in `app_example.py`; added coordinate reverse helpers `px/py`; retained basic arrow-key navigation phase-1 APIs.
+- 0.3.8 (2026-02-12): Track A marked complete after validation; documented focus/select state separation, active scope behavior, blocker rejection rules, and directional resolve order; synchronized examples section with `app_gauges_example.py` multi-scope + checklist demo.
+- 0.3.7 (2026-02-12): Kept version; cleaned docs; added poly transform APIs (`transform/rescale/rotate/add_poly_transformed`) and transform demo in `app_example.py`; added coordinate reverse helpers `px/py`; started Track A implementation with active scope, blocker APIs, and cross-scope nav target support (validated in `app_gauges_example.py` testplace); added minimal checkbox menu test (`checklist` scope) to validate mixed widgets under scope routing.
 - 0.3.6 (2026-02-12): Added AI-coding assessment and navigation pre-design notes.
 - 0.3.5 (2026-02-12): Added global dynamic offset channels and `app_example.py` showcase.
 - 0.3.4 (2026-02-12): Added display/window override APIs and pattern thickness fix.
