@@ -159,7 +159,7 @@ def main():
         min_gui_api_level=1,
     )
 
-    font_ascii = FONTS_DIR / "DEM-MO typeface" / "Mono" / "DEM-MOMono-400.otf"
+    font_ascii = FONTS_DIR / "DEM-MO typeface" / "Mono" / "DEM-MOMono-300.otf"
     font_cjk = FONTS_DIR / "wqy-zenhei" / "wqy-zenhei.ttc"
     app.set_fonts(ascii_path=str(font_ascii), cjk_path=str(font_cjk), cell_w=8, cell_h=16, size_px=16)
     app.set_root_page(DemoArchivePage())

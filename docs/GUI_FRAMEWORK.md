@@ -1,6 +1,6 @@
 # GUI Framework Notes
 
-Version: 0.3.9
+Version: 0.4.0
 Last Updated: 2026-02-13
 
 ## 0) Documentation Split
@@ -315,6 +315,7 @@ Status:
 4. Add migration notes when stable API behavior changes.
 
 ## 8) Change Log
+- 0.4.0 (2026-02-13): Added GUI text measurement + text box alignment primitives with manual line breaks; introduced super-grid text rendering at pixel coordinates with integer scaling or 5x7 mode; extended overlay reset/draw pipeline for super text.
 - 0.3.9 (2026-02-13): Anyware-side text componentization adopted on top of GUI text primitives (`Label/Text` + `ctx.label()/ctx.text()`), and a temporary Anyware demo archive page (`apps/app_anyware_demo.py`) added for iterative component showcase.
 - 0.3.9 (2026-02-13): Started Anyware dependency-mode adoption with class-based bootstrap on dependent side (`AnywareApp`/`AnywareContext`/`PageStack`, plus initial `Button`/`ButtonArray`), while keeping GUI as independent engine contract provider.
 - 0.3.9 (2026-02-13): Introduced engine contract primitives for independent versioning: `GUI_ENGINE_VERSION`, `GUI_API_LEVEL`, `get_engine_manifest()`, `require_api_level()`, `get_api_contract()`. Added canonical frame lifecycle helpers `begin_frame()`/`finish_frame()` and `GuiRuntime` facade for Anyware dependency boundary.

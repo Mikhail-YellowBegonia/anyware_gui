@@ -14,6 +14,9 @@ REQUIRED_GUI_STABLE_API = (
     "grid_to_px",
     "static",
     "hstatic",
+    "measure_text_cells",
+    "draw_text_box",
+    "draw_super_text_px",
     "ani_char",
     "draw_box",
     "draw_rect",
@@ -147,6 +150,67 @@ class AnywareContext:
     def hstatic(self, x: int, y: int, color, content, line_step: int = 1):
         """Compatibility path. Prefer label()/text() in Anyware code."""
         return self.label(x, y, color, content, orientation="vertical", line_step=line_step)
+
+    def measure_text_cells(self, text: str, *, orientation: str = "horizontal", line_step: int = 1):
+        orient = self._normalize_text_orientation(orientation)
+        return GUI.measure_text_cells(text, orientation=orient, line_step=line_step)
+
+    def draw_text_box(
+        self,
+        gx: int,
+        gy: int,
+        gw: int,
+        gh: int,
+        color,
+        text,
+        *,
+        align_h: str = "left",
+        align_v: str = "top",
+        orientation: str = "horizontal",
+        line_step: int = 1,
+    ):
+        orient = self._normalize_text_orientation(orientation)
+        return GUI.draw_text_box(
+            gx,
+            gy,
+            gw,
+            gh,
+            color,
+            text,
+            align_h=align_h,
+            align_v=align_v,
+            orientation=orient,
+            line_step=line_step,
+        )
+
+    def draw_super_text_px(
+        self,
+        x_px: float,
+        y_px: float,
+        color,
+        text,
+        *,
+        scale: int = 1,
+        mode: str | None = None,
+        align_h: str = "left",
+        align_v: str = "top",
+        box_w_px: float | None = None,
+        box_h_px: float | None = None,
+        line_step: int = 1,
+    ):
+        return GUI.draw_super_text_px(
+            x_px,
+            y_px,
+            color,
+            text,
+            scale=scale,
+            mode=mode,
+            align_h=align_h,
+            align_v=align_v,
+            box_w_px=box_w_px,
+            box_h_px=box_h_px,
+            line_step=line_step,
+        )
 
     def ani_char(self, x: int, y: int, color, animation, *, local_offset=None, global_offset=None, slowdown=None):
         return GUI.ani_char(

@@ -30,6 +30,12 @@ class Button(Component):
         status: object | Callable[["Button", object], object] | None = None,
         status_color_map: dict | None = None,
         status_default_color: str = "CRT_Cyan",
+        label_align_h: str = "left",
+        label_align_v: str = "top",
+        label_line_step: int = 1,
+        label_orientation: str = "horizontal",
+        label_padding_gx: int = 1,
+        label_padding_gy: int = 1,
     ):
         super().__init__(component_id=button_id, visible=True, enabled=True)
         self.button_id = button_id
@@ -49,6 +55,12 @@ class Button(Component):
         self.status = status
         self.status_color_map = dict(status_color_map or {})
         self.status_default_color = status_default_color
+        self.label_align_h = str(label_align_h)
+        self.label_align_v = str(label_align_v)
+        self.label_line_step = max(1, int(label_line_step))
+        self.label_orientation = str(label_orientation)
+        self.label_padding_gx = int(label_padding_gx)
+        self.label_padding_gy = int(label_padding_gy)
         self.selected = False
         self._registered = False
 
@@ -128,9 +140,36 @@ class Button(Component):
             ctx.draw_rect(self.color, x + 2, y + 2, w - 4, h - 4, filled=False, thickness=1)
         if self.selected:
             ctx.draw_pattern_rect(self.color, x + 2, y + 2, w - 4, h - 4, thickness=1)
-        text_x = int(round(ctx.px(x))) + 1
-        text_y = int(round(ctx.py(y))) + 1
-        ctx.label(text_x, text_y, border_color, self.label[:12], orientation="horizontal")
+        gx = int(round(ctx.px(x)))
+        gy = int(round(ctx.py(y)))
+        gw = max(1, int(round(ctx.px(x + w) - ctx.px(x))))
+        gh = max(1, int(round(ctx.py(y + h) - ctx.py(y))))
+        inner_gx = gx + self.label_padding_gx
+        inner_gy = gy + self.label_padding_gy
+        inner_gw = gw - (self.label_padding_gx * 2)
+        inner_gh = gh - (self.label_padding_gy * 2)
+        if inner_gw > 0 and inner_gh > 0:
+            ctx.draw_text_box(
+                inner_gx,
+                inner_gy,
+                inner_gw,
+                inner_gh,
+                border_color,
+                self.label,
+                align_h=self.label_align_h,
+                align_v=self.label_align_v,
+                orientation=self.label_orientation,
+                line_step=self.label_line_step,
+            )
+        else:
+            ctx.label(
+                gx,
+                gy,
+                border_color,
+                self.label,
+                orientation=self.label_orientation,
+                line_step=self.label_line_step,
+            )
 
 
 class ButtonArray(ComponentGroup):

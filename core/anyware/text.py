@@ -14,20 +14,28 @@ class Label(Component):
         label_id: str | None = None,
         gx: int = 0,
         gy: int = 0,
+        gw: int | None = None,
+        gh: int | None = None,
         text: str | Callable[[object], str] = "",
         color: str = "CRT_Cyan",
         orientation: str = "horizontal",
         line_step: int = 1,
+        align_h: str = "left",
+        align_v: str = "top",
         visible: bool = True,
         enabled: bool = True,
     ):
         super().__init__(component_id=label_id, visible=visible, enabled=enabled)
         self.gx = int(gx)
         self.gy = int(gy)
+        self.gw = None if gw is None else int(gw)
+        self.gh = None if gh is None else int(gh)
         self.text = text
         self.color = color
         self.orientation = orientation
         self.line_step = max(1, int(line_step))
+        self.align_h = str(align_h)
+        self.align_v = str(align_v)
 
     def set_text(self, text: str | Callable[[object], str]) -> None:
         self.text = text
@@ -40,6 +48,20 @@ class Label(Component):
 
     def render(self, ctx) -> None:
         if not self.visible:
+            return
+        if self.gw is not None and self.gh is not None:
+            ctx.draw_text_box(
+                self.gx,
+                self.gy,
+                self.gw,
+                self.gh,
+                self.color,
+                self._resolve_text(ctx),
+                align_h=self.align_h,
+                align_v=self.align_v,
+                orientation=self.orientation,
+                line_step=self.line_step,
+            )
             return
         ctx.label(
             self.gx,

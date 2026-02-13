@@ -10,8 +10,8 @@ from core.anyware import AnywareApp, Button, Label, Page, SegmentDisplay
 _COLOR = "White"
 
 # --- Manual layout constants (grid units) ---
-GRID_COLS = 60
-GRID_ROWS = 50
+GRID_COLS = 54
+GRID_ROWS = 38
 
 PANEL_W = 55
 PANEL_H = 39
@@ -335,7 +335,7 @@ def main():
             "cols": GRID_COLS,
             "fps": 10,
             "target_fps": 60,
-            "window_noframe": False,
+            "window_noframe": True,
             "window_always_on_top": False,
             "window_bg_color_rgb": (8, 12, 14),
         },
@@ -343,7 +343,7 @@ def main():
         min_gui_api_level=1,
     )
 
-    font_ascii = FONTS_DIR / "DEM-MO typeface" / "Mono" / "DEM-MOMono-400.otf"
+    font_ascii = FONTS_DIR / "DEM-MO typeface" / "Mono" / "DEM-MOMono-300.otf"
     font_cjk = FONTS_DIR / "wqy-zenhei" / "wqy-zenhei.ttc"
     app.set_fonts(ascii_path=str(font_ascii), cjk_path=str(font_cjk), cell_w=8, cell_h=16, size_px=16)
 

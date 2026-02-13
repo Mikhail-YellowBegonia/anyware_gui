@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 # region version and compatibility
 GUI_ENGINE_NAME = "krpc-gui"
-GUI_ENGINE_VERSION = "0.3.9"
+GUI_ENGINE_VERSION = "0.4.0"
 GUI_ENGINE_RELEASE_DATE = "2026-02-13"
 GUI_API_LEVEL = 1
 GUI_DEPENDENCY_MODEL = "standalone"
@@ -269,6 +269,7 @@ _font_cjk = None
 _font_ascii_path = None
 _font_cjk_path = None
 _glyph_cache = {}
+_glyph_cache_custom = {}
 
 def _sanitize_display_option(key, value):
     if key in ("fps", "target_fps", "char_height", "char_width", "rows", "cols"):
@@ -286,13 +287,14 @@ def _sanitize_display_option(key, value):
     return value
 
 def _allocate_framebuffers():
-    global screen, screen_color, screen_raw, _glyph_cache
+    global screen, screen_color, screen_raw, _glyph_cache, _glyph_cache_custom
     cols, rows = row_column_resolution
     ch_h, ch_w = char_resolution
     screen = np.full((rows, cols), ' ', dtype='<U1')
     screen_color = np.zeros((rows, cols), dtype=np.uint8)
     screen_raw = np.zeros((ch_h * rows, ch_w * cols), dtype=int)
     _glyph_cache = {}
+    _glyph_cache_custom = {}
 
 def _apply_display_defaults(rebuild_framebuffers=True):
     global fps, target_fps, char_resolution, row_column_resolution
@@ -966,7 +968,7 @@ def clear_cell(x, y, char=' ', color=0):
 def set_fonts(ascii_path=None, cjk_path=None, cell_w=None, cell_h=None, size_px=None):
     """Load font files (TTF/OTF/TTC) and set cell size."""
     global _font_ascii, _font_cjk, _font_ascii_path, _font_cjk_path
-    global char_resolution, screen_raw, _glyph_cache
+    global char_resolution, screen_raw, _glyph_cache, _glyph_cache_custom
     if cell_h is not None:
         char_resolution[0] = int(cell_h)
         DISPLAY_USER_DEFAULTS["char_height"] = int(char_resolution[0])
@@ -982,6 +984,7 @@ def set_fonts(ascii_path=None, cjk_path=None, cell_w=None, cell_h=None, size_px=
         _font_cjk = pygame.freetype.Font(cjk_path, size_px)
         _font_cjk_path = cjk_path
     _glyph_cache = {}
+    _glyph_cache_custom = {}
     screen_raw = np.zeros((char_resolution[0]*row_column_resolution[1], char_resolution[1]*row_column_resolution[0]), dtype=int)
 
 def set_font(filepath, cell_w=None, cell_h=None, size_px=None):
@@ -1096,6 +1099,7 @@ fillpoly_queue = []
 def reset_overlays():
     line_queue.clear()
     fillpoly_queue.clear()
+    super_text_queue.clear()
 
 def draw_to_surface(surface):
     surface.fill(window_bg_color_rgb)
@@ -1131,6 +1135,25 @@ def draw_to_surface(surface):
         x1, y1, x2, y2, c, t = item
         thickness = max(1, int(round(float(t) * PIXEL_SCALE)))
         pygame.draw.line(surface, get_color_rgb(c), (x1, y1), (x2, y2), thickness)
+    for item in super_text_queue:
+        x_px, y_px, bmp, c_idx, scale = item
+        rgb = get_color_rgb(c_idx)
+        h, w = bmp.shape
+        px_scale = max(1, int(round(float(scale) * PIXEL_SCALE)))
+        for py in range(h):
+            lit_px = np.flatnonzero(bmp[py])
+            if lit_px.size == 0:
+                continue
+            for px in lit_px:
+                surface.fill(
+                    rgb,
+                    (
+                        x_px + px * px_scale,
+                        y_px + py * px_scale,
+                        px_scale,
+                        px_scale,
+                    ),
+                )
 # endregion
 
 # region Polygon Library (unified)
@@ -1481,6 +1504,247 @@ def hstatic(x, y, color, content, line_step=1):
         row += step
     return True
 
+def _split_text_lines(text):
+    if text is None:
+        return []
+    text = text if isinstance(text, str) else str(text)
+    if text == "":
+        return []
+    return text.split("\n")
+
+def _measure_line_cells(text):
+    width = 0
+    for raw_char in text:
+        char = _normalize_cell_char(raw_char)
+        if char == WIDE_CONT:
+            char = " "
+        width += 2 if _is_wide_char(char) else 1
+    return width
+
+def measure_text_cells(text, *, orientation="horizontal", line_step=1):
+    orient = str(orientation).strip().lower()
+    step = max(1, int(line_step))
+    lines = _split_text_lines(text)
+    if not lines:
+        return (0, 0)
+    if orient == "vertical":
+        widths = []
+        heights = []
+        for line in lines:
+            widths.append(2 if any(_is_wide_char(_normalize_cell_char(ch)) for ch in line) else 1)
+            height = 1 + (len(line) - 1) * step if line else 0
+            heights.append(height)
+        total_w = sum(widths)
+        total_h = max(heights) if heights else 0
+        return (total_w, total_h)
+    widths = [_measure_line_cells(line) for line in lines]
+    height = 1 + (len(lines) - 1) * step
+    return (max(widths) if widths else 0, height)
+
+def _truncate_line_to_cells(text, max_cells):
+    if max_cells <= 0:
+        return ""
+    out = []
+    used = 0
+    for raw_char in text:
+        char = _normalize_cell_char(raw_char)
+        if char == WIDE_CONT:
+            char = " "
+        wide = _is_wide_char(char)
+        if wide:
+            if used + 2 <= max_cells:
+                out.append(char)
+                used += 2
+                continue
+            if used + 1 <= max_cells:
+                out.append(char)
+                used += 1
+            break
+        if used + 1 > max_cells:
+            break
+        out.append(char)
+        used += 1
+    return "".join(out)
+
+def _truncate_vertical(text, max_rows, line_step):
+    if max_rows <= 0:
+        return ""
+    step = max(1, int(line_step))
+    max_chars = 1 + (max_rows - 1) // step
+    return text[:max_chars]
+
+def _align_start(start, span, size, align):
+    if size <= 0:
+        return int(start)
+    if size >= span:
+        return int(start)
+    align = str(align).strip().lower()
+    if align in ("center", "middle"):
+        return int(start + (span - size) // 2)
+    if align in ("right", "bottom"):
+        return int(start + (span - size))
+    return int(start)
+
+def draw_text_box(
+    gx,
+    gy,
+    gw,
+    gh,
+    color,
+    text,
+    *,
+    align_h="left",
+    align_v="top",
+    orientation="horizontal",
+    line_step=1,
+):
+    """Draw text within a grid-aligned box using integer cell coordinates."""
+    orient = str(orientation).strip().lower()
+    lines = _split_text_lines(text)
+    if not lines:
+        return False
+    gw = int(gw)
+    gh = int(gh)
+    text_w, text_h = measure_text_cells(text, orientation=orient, line_step=line_step)
+    start_x = _align_start(int(gx), gw, text_w, align_h)
+    start_y = _align_start(int(gy), gh, text_h, align_v)
+    step = max(1, int(line_step))
+    if orient == "vertical":
+        x = start_x
+        for line in lines:
+            col_width = 2 if any(_is_wide_char(_normalize_cell_char(ch)) for ch in line) else 1
+            truncated = _truncate_vertical(line, gh, step)
+            hstatic(x, start_y, color, truncated, line_step=step)
+            x += col_width
+        return True
+    for idx, line in enumerate(lines):
+        y = start_y + idx * step
+        if y >= int(gy) + gh:
+            break
+        truncated = _truncate_line_to_cells(line, gw)
+        static(start_x, y, color, truncated)
+    return True
+
+def _get_glyph_bitmap_custom(ch, wide, cell_w, cell_h):
+    font = _font_cjk if wide and _font_cjk is not None else _font_ascii
+    font_path = _font_cjk_path if wide and _font_cjk_path is not None else _font_ascii_path
+    if font is None:
+        return None
+    span_w = cell_w * (2 if wide else 1)
+    key = (ch, wide, cell_h, span_w, font_path)
+    if key in _glyph_cache_custom:
+        return _glyph_cache_custom[key]
+    surf, _ = font.render(ch, fgcolor=(255, 255, 255), bgcolor=None)
+    alpha = pygame.surfarray.array_alpha(surf)
+    surf_w, surf_h = surf.get_size()
+    if alpha.shape == (surf_w, surf_h):
+        alpha = alpha.T
+    h, w = alpha.shape
+    if h == 0 or w == 0:
+        _glyph_cache_custom[key] = None
+        return None
+    scale = min(span_w / w, cell_h / h, 1.0)
+    if scale < 1.0:
+        new_w = max(1, int(round(w * scale)))
+        new_h = max(1, int(round(h * scale)))
+        y_idx = (np.arange(new_h) * (h / new_h)).astype(int).clip(0, h - 1)
+        x_idx = (np.arange(new_w) * (w / new_w)).astype(int).clip(0, w - 1)
+        scaled = alpha[np.ix_(y_idx, x_idx)]
+    else:
+        scaled = alpha
+    h2, w2 = scaled.shape
+    out = np.zeros((cell_h, span_w), dtype=int)
+    y0 = max(0, (cell_h - h2) // 2)
+    x0 = max(0, (span_w - w2) // 2)
+    out[y0 : y0 + h2, x0 : x0 + w2] = (scaled > 0).astype(int)
+    _glyph_cache_custom[key] = out
+    return out
+
+def _measure_super_text_px(text, cell_w, cell_h, *, scale=1, line_step=1):
+    lines = _split_text_lines(text)
+    if not lines:
+        return (0, 0)
+    step = max(1, int(line_step))
+    cell_w_px = int(cell_w * PIXEL_SCALE * scale)
+    cell_h_px = int(cell_h * PIXEL_SCALE * scale)
+    widths = []
+    for line in lines:
+        width_cells = _measure_line_cells(line)
+        widths.append(width_cells * cell_w_px)
+    height_px = cell_h_px + (len(lines) - 1) * step * cell_h_px
+    return (max(widths) if widths else 0, height_px)
+
+super_text_queue = []
+
+def draw_super_text_px(
+    x_px,
+    y_px,
+    color,
+    text,
+    *,
+    scale=1,
+    mode=None,
+    align_h="left",
+    align_v="top",
+    box_w_px=None,
+    box_h_px=None,
+    line_step=1,
+):
+    """Draw super-grid text in absolute pixel coordinates (post-PIXEL_SCALE space)."""
+    if text is None:
+        return False
+    text = text if isinstance(text, str) else str(text)
+    if text == "":
+        return False
+    use_mode = None if mode is None else str(mode).strip().lower()
+    if use_mode == "5x7":
+        cell_w = 5
+        cell_h = 7
+        scale = 1
+    else:
+        cell_h, cell_w = char_resolution
+        scale = max(1, int(scale))
+    text_w_px, text_h_px = _measure_super_text_px(text, cell_w, cell_h, scale=scale, line_step=line_step)
+    x_px = int(round(x_px))
+    y_px = int(round(y_px))
+    if box_w_px is not None:
+        x_px = _align_start(x_px, int(box_w_px), text_w_px, align_h)
+    if box_h_px is not None:
+        y_px = _align_start(y_px, int(box_h_px), text_h_px, align_v)
+    c_idx = _resolve_color(color)
+    step = max(1, int(line_step))
+    cell_w_px = int(cell_w * PIXEL_SCALE * scale)
+    cell_h_px = int(cell_h * PIXEL_SCALE * scale)
+    lines = _split_text_lines(text)
+    if box_w_px is not None:
+        max_cells = int(int(box_w_px) // max(1, cell_w_px))
+        lines = [_truncate_line_to_cells(line, max_cells) for line in lines]
+    if box_h_px is not None:
+        max_lines = max(0, 1 + (int(box_h_px) - cell_h_px) // (step * cell_h_px))
+        lines = lines[:max_lines]
+    for line_idx, line in enumerate(lines):
+        line_x = x_px
+        line_y = y_px + line_idx * step * cell_h_px
+        col_offset_px = 0
+        for raw_char in line:
+            char = _normalize_cell_char(raw_char)
+            if char == WIDE_CONT:
+                char = " "
+            wide = _is_wide_char(char)
+            bmp = _get_glyph_bitmap_custom(char, wide, cell_w, cell_h)
+            if bmp is not None:
+                super_text_queue.append(
+                    (
+                        int(line_x + col_offset_px),
+                        int(line_y),
+                        bmp,
+                        int(c_idx),
+                        int(scale),
+                    )
+                )
+            col_offset_px += cell_w_px * (2 if wide else 1)
+    return True
+
 def ani_char(x, y, color, animation, local_offset=None, global_offset=None, slowdown=None):
     opts = _resolve_opts("ani", {"local_offset": local_offset, "global_offset": global_offset, "slowdown": slowdown})
     c = color[round((frame + opts["global_offset"]) / opts["slowdown"]) % len(color)] if isinstance(color, list) else color
@@ -1528,6 +1792,9 @@ STABLE_API = (
     "clear_cell",
     "static",
     "hstatic",
+    "measure_text_cells",
+    "draw_text_box",
+    "draw_super_text_px",
     "ani_char",
     "sweep",
     "grid_to_px",
