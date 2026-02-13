@@ -4,7 +4,7 @@ from typing import Callable
 
 import pygame
 
-from anyware.component import Component, ComponentGroup
+from .component import Component, ComponentGroup
 
 
 class Button(Component):

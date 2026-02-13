@@ -3,31 +3,32 @@
 Anyware version: 0.0.4  
 Target MVP version: 0.1.0  
 GUI dependency baseline: `GUI_API_LEVEL >= 1`  
-Doc role: planning/architecture (tutorial is `GUI_TUTORIAL.md`)
+Doc role: planning/architecture (tutorial is `../GUI_TUTORIAL.md`)
 
 ## 1) Positioning
-- Anyware is a high-level component layer above `GUI.py`.
+- Anyware is a high-level component layer above `core/GUI.py`.
 - Using Anyware still means writing real Python code.
 - Two paths remain valid:
-  - raw path: app -> `GUI.py`
-  - component path: app -> `Anyware.py` -> `GUI.py`
+  - raw path: app -> `core/GUI.py`
+  - component path: app -> `core/anyware/*` -> `core/GUI.py`
 - Design preference: grid-first composition, then local pixel tuning.
 
 ## 2) Layer Contract
-1. `GUI.py` (engine):
+1. `core/GUI.py` (engine):
 - rendering primitives, coordinate conversion, focus/nav internals, draw queues, defaults.
 - no business widget semantics.
 - publishes compatibility via `GUI_API_LEVEL` and stable API contract.
 
-2. `Anyware.py` (components):
+2. `core/anyware` (components package):
 - reusable widgets, page/scope composition helpers, interaction conventions.
-- wraps `GUI.py`, no reverse dependency.
+- wraps `core/GUI.py`, no reverse dependency.
 - validates dependency at startup via `require_api_level(...)`.
+- compatibility entrypoint: `core/Anyware.py` (legacy import bridge).
 
 ### 2.1 App API Access Policy
 - Default path: app code should call Anyware classes/context only.
 - Text policy: Anyware app code should use `Label/Text` component or `ctx.label()/ctx.text()`, not `static/hstatic` directly.
-- Escape hatch: raw `GUI.py` access is allowed only as explicit opt-in (debug/migration/specialized rendering).
+- Escape hatch: raw `core/GUI.py` access is allowed only as explicit opt-in (debug/migration/specialized rendering).
 - Enforce by runtime flag:
   - `allow_raw_gui=False` by default.
   - `ctx.raw_gui()` raises when raw access is not explicitly enabled.
@@ -39,14 +40,14 @@ Doc role: planning/architecture (tutorial is `GUI_TUTORIAL.md`)
 - prototype place before promotion.
 
 Promotion policy:
-- app feature -> `GUI.py` only if at least 2/3:
+- app feature -> `core/GUI.py` only if at least 2/3:
   - repeated in multiple scenarios
   - low-level and domain-agnostic
   - does not significantly increase API complexity
-- otherwise app feature -> `Anyware.py`.
+- otherwise app feature -> `core/anyware`.
 
 Out-of-scope:
-- `Sound.py` stays independent placeholder; not part of Anyware v0.1.0 MVP.
+- `core/Sound.py` stays independent placeholder; not part of Anyware v0.1.0 MVP.
 
 ## 3) Component Universe (Planning Inventory)
 This is the full planning inventory, not the immediate MVP scope.
@@ -104,7 +105,7 @@ Current status:
 - can be approximated by manual frame logic, but no standard primitive for path-progress drawing.
 
 Decision:
-- missing capability is low-level and reusable -> should be in `GUI.py`.
+- missing capability is low-level and reusable -> should be in `core/GUI.py`.
 
 Proposed GUI additions:
 1. `draw_line_progress(p1, p2, progress, ...)`
@@ -121,7 +122,7 @@ Current status:
 - no direct standard API for text pixel metrics.
 
 Decision:
-- add low-level metric API in `GUI.py`:
+- add low-level metric API in `core/GUI.py`:
   - `measure_text(content, ...) -> (w_px, h_px)`
 - Anyware uses this for auto-sized controls.
 
@@ -130,7 +131,7 @@ Need:
 - clip drawing in rect for reveal transitions.
 
 Decision:
-- optional for v0.1.0; if implemented, belongs to `GUI.py` (render primitive).
+- optional for v0.1.0; if implemented, belongs to `core/GUI.py` (render primitive).
 
 ### 4.4 Complex VFX (particle/3D-grade motion)
 Decision:
@@ -174,6 +175,7 @@ Dependencies on GUI requirements:
 
 ## 5) MVP Scope for Anyware 0.1.0
 Minimum component set:
+- `Label`
 - `Button`
 - `ButtonArray`
 - `CheckboxMenu`
@@ -224,19 +226,19 @@ Must satisfy all:
 - raw GUI path
 - Anyware path
 - grid/pixel conversion rules
-- demo archive usage (`subproject_anyware/demo_archive.md`)
+- demo archive usage (`demo_archive.md`)
 
 ## 8) Version Changelog (Anyware)
 - 0.0.4 (2026-02-13):
   - introduced text componentization: `Label`, `Text` (supports `orientation` + `color`)
   - added Anyware text drawing aliases: `ctx.label()` / `ctx.text()`; `ctx.static()`/`ctx.hstatic()` kept as compatibility path
   - migrated current Anyware demos to label-first usage
-  - added `app_anyware_demo.py` as temporary Anyware demo archive page
+  - added `apps/app_anyware_demo.py` as temporary Anyware demo archive page
 - 0.0.3 (2026-02-13):
   - introduced class-based Anyware runtime skeleton: `AnywareApp`, `AnywareContext`, `Page`, `PageStack`, `Component`, `ComponentGroup`
   - added first reusable controls: `Button`, `ButtonArray`
   - enforced GUI stable API dependency check inside `AnywareContext` (`REQUIRED_GUI_STABLE_API`)
-  - added migration demos: `app_anyware_template.py`, `app_anyware_gauges.py`
+  - added migration demos: `apps/app_anyware_template.py`, `apps/app_anyware_gauges.py`
   - kept raw GUI access as explicit opt-in only (`allow_raw_gui`, `ctx.raw_gui()`)
 - 0.0.2 (2026-02-13):
   - switched from shared GUI/Anyware doc versioning to dependency contract mode

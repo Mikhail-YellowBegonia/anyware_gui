@@ -1,9 +1,12 @@
 import math
-import os
 
 import pygame
 
-from anyware import AnywareApp, ButtonArray, Label, Page
+from _bootstrap import FONTS_DIR, ensure_repo_root_on_path
+
+ensure_repo_root_on_path()
+
+from core.anyware import AnywareApp, ButtonArray, Label, Page
 
 
 class GaugesPage(Page):
@@ -129,9 +132,9 @@ def main():
         min_gui_api_level=1,
     )
 
-    font_ascii = os.path.join(os.path.dirname(__file__), "DEM-MO typeface", "Mono", "DEM-MOMono-400.otf")
-    font_cjk = os.path.join(os.path.dirname(__file__), "wqy-zenhei", "wqy-zenhei.ttc")
-    app.set_fonts(ascii_path=font_ascii, cjk_path=font_cjk, cell_w=8, cell_h=16, size_px=16)
+    font_ascii = FONTS_DIR / "DEM-MO typeface" / "Mono" / "DEM-MOMono-400.otf"
+    font_cjk = FONTS_DIR / "wqy-zenhei" / "wqy-zenhei.ttc"
+    app.set_fonts(ascii_path=str(font_ascii), cjk_path=str(font_cjk), cell_w=8, cell_h=16, size_px=16)
     app.set_root_page(GaugesPage())
     app.run()
 

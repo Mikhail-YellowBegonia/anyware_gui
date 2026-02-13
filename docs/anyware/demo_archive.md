@@ -8,13 +8,13 @@ Purpose:
 - Provide one place to validate component interactions after each small release.
 
 Current demo entries:
-1. `app_anyware_template.py`
+1. `apps/app_anyware_template.py`
 - Minimal lifecycle + focus wiring + label-first rendering.
 
-2. `app_anyware_gauges.py`
-- Dynamic values + `ButtonArray` + mixed draw/text usage under Anyware runtime.
+2. `apps/app_anyware_gauges.py`
+- Dynamic values + `ButtonArray` + label-first text usage under Anyware runtime.
 
-3. `app_anyware_demo.py`
+3. `apps/app_anyware_demo.py`
 - Temporary integrated archive page for stable components (`Label/Text`, `ButtonArray`, focus frame).
 
 Archive policy:

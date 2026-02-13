@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from anyware.component import ComponentGroup
+from .component import ComponentGroup
 
 
 class Page(ComponentGroup):

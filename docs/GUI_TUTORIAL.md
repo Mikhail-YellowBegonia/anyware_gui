@@ -136,13 +136,13 @@ GUI.draw_focus_blockers("blink10", scope="main", thickness=1)
 - Fix: node rect must be pixel; use `gx()/gy()` when defining rect.
 
 ## 8) Next Learning Path
-1. Read `app_template.py` for minimal structure.
-2. Read `app_example.py` for API surface.
-3. Read `app_gauges_example.py` for advanced composition (scope/blocker/checklist).
-4. Read `app_anyware_template.py` and `app_anyware_gauges.py` for class-based Anyware path.
-5. Read `app_anyware_demo.py` as temporary Anyware demo archive page.
+1. Read `apps/app_template.py` for minimal structure.
+2. Read `apps/app_example.py` for API surface.
+3. Read `apps/app_gauges_example.py` for advanced composition (scope/blocker/checklist).
+4. Read `apps/app_anyware_template.py` and `apps/app_anyware_gauges.py` for class-based Anyware path.
+5. Read `apps/app_anyware_demo.py` as temporary Anyware demo archive page.
 6. Then decide:
-- stay raw `GUI.py` for precise control, or
+- stay raw `core/GUI.py` for precise control, or
 - move to Anyware components for faster assembly.
 
 ## 9) AI Coding Strategy (Grid-First)

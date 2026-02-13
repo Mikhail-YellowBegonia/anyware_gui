@@ -1,8 +1,11 @@
-import os
 import sys
 import time
 import pygame
-import GUI
+from _bootstrap import FONTS_DIR, ensure_repo_root_on_path
+
+ensure_repo_root_on_path()
+
+from core import GUI
 
 
 GUI.add_poly(
@@ -31,9 +34,9 @@ def main():
         window_bg_color_rgb=(8, 12, 12),
     )
 
-    font_ascii = os.path.join(os.path.dirname(__file__), "DEM-MO typeface", "Mono", "DEM-MOMono-400.otf")
-    font_cjk = os.path.join(os.path.dirname(__file__), "wqy-zenhei", "wqy-zenhei.ttc")
-    GUI.set_fonts(ascii_path=font_ascii, cjk_path=font_cjk, cell_w=8, cell_h=16, size_px=16)
+    font_ascii = FONTS_DIR / "DEM-MO typeface" / "Mono" / "DEM-MOMono-400.otf"
+    font_cjk = FONTS_DIR / "wqy-zenhei" / "wqy-zenhei.ttc"
+    GUI.set_fonts(ascii_path=str(font_ascii), cjk_path=str(font_cjk), cell_w=8, cell_h=16, size_px=16)
 
     screen_surf = pygame.display.set_mode(GUI.get_window_size_px(), GUI.get_window_flags())
     pygame.display.set_caption("GUI Pattern Debug Demo")

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from anyware.component import Component
+from .component import Component
 
 
 class Label(Component):

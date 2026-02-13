@@ -1,17 +1,20 @@
-import os
 import time
 import sys
 import pygame
-import GUI
 import math
+from _bootstrap import FONTS_DIR, ensure_repo_root_on_path
+
+ensure_repo_root_on_path()
+
+from core import GUI
 
 def main():
     pygame.init()
 
     # Load fonts (update paths as needed)
-    font_ascii = os.path.join(os.path.dirname(__file__), "DEM-MO typeface", "Mono", "DEM-MOMono-400.otf")
-    font_cjk = os.path.join(os.path.dirname(__file__), "wqy-zenhei", "wqy-zenhei.ttc")
-    GUI.set_fonts(ascii_path=font_ascii, cjk_path=font_cjk, cell_w=8, cell_h=16, size_px=16)
+    font_ascii = FONTS_DIR / "DEM-MO typeface" / "Mono" / "DEM-MOMono-400.otf"
+    font_cjk = FONTS_DIR / "wqy-zenhei" / "wqy-zenhei.ttc"
+    GUI.set_fonts(ascii_path=str(font_ascii), cjk_path=str(font_cjk), cell_w=8, cell_h=16, size_px=16)
 
     # Calculate window size
     cols, rows = GUI.row_column_resolution

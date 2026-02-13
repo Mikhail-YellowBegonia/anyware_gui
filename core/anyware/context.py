@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import GUI
+from core import GUI
 
 REQUIRED_GUI_STABLE_API = (
     "begin_frame",

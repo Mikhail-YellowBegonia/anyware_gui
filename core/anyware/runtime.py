@@ -4,9 +4,9 @@ import time
 
 import pygame
 
-import GUI
-from anyware.context import AnywareContext
-from anyware.page import Page, PageStack
+from core import GUI
+from .context import AnywareContext
+from .page import Page, PageStack
 
 
 class AnywareApp:

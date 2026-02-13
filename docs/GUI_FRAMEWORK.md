@@ -13,38 +13,39 @@ Last Updated: 2026-02-13
 - Core is a grid-based text renderer with overlay drawing.
 - Text writes into `screen/screen_color`; each frame rasterizes to `screen_raw`.
 - Overlay queues (`line_queue`, `fillpoly_queue`) are rendered after text.
-- Architecture is layered: `GUI.py` (engine) < `Anyware.py` (high-level components) < app examples/use-case collection.
+- Architecture is layered: `core/GUI.py` (engine) < `core/anyware/*` (high-level components) < `apps/*` (use-cases/examples).
 
 ## 1.1 Layer Contract (Track B Consensus)
 This project keeps two valid usage paths:
-- Raw path: apps call `GUI.py` directly for low-level control.
-- Anyware path: apps call `Anyware.py` for high-level widgets and composition.
+- Raw path: apps call `core/GUI.py` directly for low-level control.
+- Anyware path: apps call `core/anyware/*` for high-level widgets and composition.
 
 Layer responsibilities:
-- `GUI.py` (engine layer):
+- `core/GUI.py` (engine layer):
   - Owns rendering primitives, coordinate system, input-to-navigation mechanism, focus internals, draw queues, and global defaults.
   - Should not own business-oriented widgets or page-level flow semantics.
-- `Anyware.py` (component layer):
+- `core/anyware` (component layer):
   - Owns reusable UI component abstractions (`Button`, `Checkbox`, gauges, arrays, page helpers).
-  - Wraps `GUI.py` and provides state->view mapping plus interaction conventions.
+  - Wraps `core/GUI.py` and provides state->view mapping plus interaction conventions.
+  - `core/Anyware.py` is compatibility-only import bridge.
 - Use-case collection (`app_*.py`):
   - Owns demos, templates, and exploratory compositions.
   - May prototype candidate components before promotion to Anyware.
 
 Dependency rule:
-- `Anyware.py` depends on `GUI.py`.
+- `core/anyware` depends on `core/GUI.py`.
 - apps may depend on either/both.
-- `GUI.py` must not depend on `Anyware.py` or app scripts.
+- `core/GUI.py` must not depend on `core/anyware` or app scripts.
 
 Out-of-scope module:
-- `Sound.py` remains independent and currently placeholder-only; not in v0.4.0 core scope.
+- `core/Sound.py` remains independent and currently placeholder-only; not in v0.4.0 core scope.
 
 Feature intake policy (from app scripts):
-- Promote code from app -> `GUI.py` only if at least two of these hold:
+- Promote code from app -> `core/GUI.py` only if at least two of these hold:
   - used repeatedly in multiple scenarios/components
   - semantically low-level and domain-agnostic
   - adding it does not significantly increase GUI API complexity
-- Otherwise, promote app code to `Anyware.py`, not `GUI.py`.
+- Otherwise, promote app code to `core/anyware`, not `core/GUI.py`.
 
 ## 2) Coordinates and Scaling
 - Text APIs: grid coordinates `(x, y)` in character cells.
@@ -195,27 +196,27 @@ Engine-side requirements (proposed):
 1. G-ANM-01 Progress-based line draw (P0)
 - API proposal: `draw_line_progress(p1, p2, progress, color, thickness=1.0, ...)`
 - Purpose: reveal line from 0% to 100% with deterministic progress.
-- Ownership: `GUI.py`
+- Ownership: `core/GUI.py`
 
 2. G-ANM-02 Progress-based poly stroke draw (P0)
 - API proposal: `draw_poly_progress(shape_or_vertices, progress, color, mode='stroke', ...)`
 - Purpose: "shape gradually lights up" boot-style reveal.
-- Ownership: `GUI.py`
+- Ownership: `core/GUI.py`
 
 3. G-ANM-03 Text metric query (P1)
 - API proposal: `measure_text(content, *, ascii_font=None, cjk_font=None) -> (w_px, h_px)`
 - Purpose: layout/animation sync for text boxes and label reveals.
-- Ownership: `GUI.py`
+- Ownership: `core/GUI.py`
 
 4. G-ANM-04 Optional clip primitive (P2)
 - API proposal: `set_clip_rect(x_px, y_px, w_px, h_px)` / `clear_clip_rect()`
 - Purpose: reveal windows/mask-like transitions.
-- Ownership: `GUI.py`
+- Ownership: `core/GUI.py`
 
 5. G-ANM-05 Stable timing access (P1)
 - Requirement: expose consistent elapsed/delta helpers for deterministic updates.
 - Note: can be wrapped over existing frame loop timing, no need for heavy runtime changes.
-- Ownership: `GUI.py`
+- Ownership: `core/GUI.py`
 
 What should NOT be in GUI engine:
 - sequence choreography
@@ -223,16 +224,16 @@ What should NOT be in GUI engine:
 - easing presets and staged script authoring
 - component lifecycle semantics
 
-These belong to `Anyware.py` and app-level orchestration.
+These belong to `core/anyware` and app-level orchestration.
 
 ## 5) Example Script
-- `app_example.py` includes:
+- `apps/app_example.py` includes:
   - text APIs
   - clear APIs
   - pattern APIs
   - focus navigation demo
   - poly transform demo (rescale + rotate)
-- `app_gauges_example.py` includes:
+- `apps/app_gauges_example.py` includes:
   - multi-scope focus switching (`main/popup/checklist`)
   - blocker demonstration
   - explicit cross-scope `nav` links
@@ -243,7 +244,7 @@ These belong to `Anyware.py` and app-level orchestration.
 - Track A status: completed and validated in testplace.
 - Implemented: arrow-key navigation core + active scope + blockers + cross-scope nav target format.
 - New validation case:
-  - Added a minimal checkbox menu (`checklist` scope) in `app_gauges_example.py`.
+  - Added a minimal checkbox menu (`checklist` scope) in `apps/app_gauges_example.py`.
   - Verified mixed-widget navigation route: `main -> popup -> checklist` and back with explicit cross-scope links.
 - Page management (draft):
   - Prefer lightweight page list/router over viewport system for this project phase.
@@ -267,7 +268,7 @@ Status: Done (2026-02-12)
 - [x] active scope runtime control and scope-restricted navigation
 - [x] blocker segments and blocked jump rejection
 - [x] cross-scope nav contract with deterministic demo links
-- [x] checklist-style widget validation in `app_gauges_example.py`
+- [x] checklist-style widget validation in `apps/app_gauges_example.py`
 
 ### Track B: Software-Engineering Review + Docs Reorganization
 1. Re-audit project boundaries
@@ -278,10 +279,10 @@ Status:
 
 2. Reorganize docs (md only)
 - Keep `GUI_FRAMEWORK.md` as core reference.
-- Make `subproject_anyware/anyware_plan.md` the Anyware product/architecture note.
+- Make `docs/anyware/anyware_plan.md` the Anyware product/architecture note.
 - Add a concise migration note for users: "raw GUI API" vs "Anyware API".
 Status:
-- Done (`GUI_FRAMEWORK.md` + `subproject_anyware/anyware_plan.md` + `GUI_TUTORIAL.md` split).
+- Done (`docs/GUI_FRAMEWORK.md` + `docs/anyware/anyware_plan.md` + `docs/GUI_TUTORIAL.md` split).
 
 3. Add anti-error guidance focused on real mistakes
 - Coordinate mixing checklist (grid vs pixel), focus vs select state, draw order checklist.
@@ -294,7 +295,7 @@ Status:
 1. Freeze Anyware v0.1 scope
 - Keep fixed-grid philosophy.
 - Start with a minimal component set:
-  - `Button`, `ButtonArray`, `RoundGauge`, `FanGauge`.
+  - `Label`, `Button`, `ButtonArray`, `RoundGauge`, `FanGauge`.
 
 2. Build minimal Anyware alpha
 - Implement class-based wrappers on top of current `GUI.py` without forcing a full core refactor.
@@ -314,16 +315,16 @@ Status:
 4. Add migration notes when stable API behavior changes.
 
 ## 8) Change Log
-- 0.3.9 (2026-02-13): Anyware-side text componentization adopted on top of GUI text primitives (`Label/Text` + `ctx.label()/ctx.text()`), and a temporary Anyware demo archive page (`app_anyware_demo.py`) added for iterative component showcase.
+- 0.3.9 (2026-02-13): Anyware-side text componentization adopted on top of GUI text primitives (`Label/Text` + `ctx.label()/ctx.text()`), and a temporary Anyware demo archive page (`apps/app_anyware_demo.py`) added for iterative component showcase.
 - 0.3.9 (2026-02-13): Started Anyware dependency-mode adoption with class-based bootstrap on dependent side (`AnywareApp`/`AnywareContext`/`PageStack`, plus initial `Button`/`ButtonArray`), while keeping GUI as independent engine contract provider.
 - 0.3.9 (2026-02-13): Introduced engine contract primitives for independent versioning: `GUI_ENGINE_VERSION`, `GUI_API_LEVEL`, `get_engine_manifest()`, `require_api_level()`, `get_api_contract()`. Added canonical frame lifecycle helpers `begin_frame()`/`finish_frame()` and `GuiRuntime` facade for Anyware dependency boundary.
 - 0.3.8 (2026-02-12): Added Track C non-loop-animation requirement split on GUI side (`G-ANM-*`): progress draw primitives, metric query, optional clipping, and timing access boundaries.
 - 0.3.8 (2026-02-12): Completed Track B closure items: doc split into feature/planning + tutorial, unified versioning, and AI-coding-oriented grid-first guidance (AI as logic implementer; manual polish by player/developer).
-- 0.3.8 (2026-02-12): Recorded Track B Q1 architecture consensus: 3-layer contract (`GUI.py`/`Anyware.py`/use-cases), dependency direction, app->GUI feature intake policy, and `Sound.py` independent placeholder boundary.
-- 0.3.8 (2026-02-12): Track A marked complete after validation; documented focus/select state separation, active scope behavior, blocker rejection rules, and directional resolve order; synchronized examples section with `app_gauges_example.py` multi-scope + checklist demo.
-- 0.3.7 (2026-02-12): Kept version; cleaned docs; added poly transform APIs (`transform/rescale/rotate/add_poly_transformed`) and transform demo in `app_example.py`; added coordinate reverse helpers `px/py`; started Track A implementation with active scope, blocker APIs, and cross-scope nav target support (validated in `app_gauges_example.py` testplace); added minimal checkbox menu test (`checklist` scope) to validate mixed widgets under scope routing.
+- 0.3.8 (2026-02-12): Recorded Track B Q1 architecture consensus: 3-layer contract (`GUI.py`/`anyware`/use-cases), dependency direction, app->GUI feature intake policy, and `Sound.py` independent placeholder boundary.
+- 0.3.8 (2026-02-12): Track A marked complete after validation; documented focus/select state separation, active scope behavior, blocker rejection rules, and directional resolve order; synchronized examples section with `apps/app_gauges_example.py` multi-scope + checklist demo.
+- 0.3.7 (2026-02-12): Kept version; cleaned docs; added poly transform APIs (`transform/rescale/rotate/add_poly_transformed`) and transform demo in `apps/app_example.py`; added coordinate reverse helpers `px/py`; started Track A implementation with active scope, blocker APIs, and cross-scope nav target support (validated in `apps/app_gauges_example.py` testplace); added minimal checkbox menu test (`checklist` scope) to validate mixed widgets under scope routing.
 - 0.3.6 (2026-02-12): Added AI-coding assessment and navigation pre-design notes.
-- 0.3.5 (2026-02-12): Added global dynamic offset channels and `app_example.py` showcase.
+- 0.3.5 (2026-02-12): Added global dynamic offset channels and `apps/app_example.py` showcase.
 - 0.3.4 (2026-02-12): Added display/window override APIs and pattern thickness fix.
 - 0.3.3 (2026-02-12): Added `hstatic`; added `draw_pattern_poly/draw_pattern_rect`.
 - 0.3.2 (2026-02-12): Fixed wide-char overwrite/continuation issues; added clear APIs.
