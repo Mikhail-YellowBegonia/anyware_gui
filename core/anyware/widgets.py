@@ -23,6 +23,13 @@ class Button(Component):
         color: str = "CRT_Cyan",
         nav: dict | None = None,
         on_select: Callable[["Button", object], None] | None = None,
+        pressable: bool = True,
+        focusable: bool = True,
+        lighted: bool | Callable[["Button", object], bool] = False,
+        light_color: str | None = None,
+        status: object | Callable[["Button", object], object] | None = None,
+        status_color_map: dict | None = None,
+        status_default_color: str = "CRT_Cyan",
     ):
         super().__init__(component_id=button_id, visible=True, enabled=True)
         self.button_id = button_id
@@ -35,14 +42,34 @@ class Button(Component):
         self.color = color
         self.nav = dict(nav or {})
         self.on_select = on_select
+        self.pressable = bool(pressable)
+        self.focusable = bool(focusable)
+        self.lighted = lighted
+        self.light_color = light_color
+        self.status = status
+        self.status_color_map = dict(status_color_map or {})
+        self.status_default_color = status_default_color
         self.selected = False
         self._registered = False
 
     def _rect_px(self, ctx):
         return (ctx.gx(self.gx), ctx.gy(self.gy), self.width_px, self.height_px)
 
+    def _resolve_bool(self, value, ctx) -> bool:
+        if callable(value):
+            return bool(value(self, ctx))
+        return bool(value)
+
+    def _resolve_status_color(self, ctx):
+        if self.status is None:
+            return None
+        value = self.status(self, ctx) if callable(self.status) else self.status
+        return self.status_color_map.get(value, self.status_default_color)
+
     def mount(self, ctx) -> None:
         super().mount(ctx)
+        if not self.focusable:
+            return
         ctx.add_focus_node(
             self.button_id,
             self._rect_px(ctx),
@@ -72,7 +99,7 @@ class Button(Component):
         )
 
     def handle_event(self, event, ctx) -> bool:
-        if not self.enabled or not self.visible:
+        if not self.enabled or not self.visible or not self.pressable:
             return False
         if event.type != pygame.KEYDOWN:
             return False
@@ -89,9 +116,14 @@ class Button(Component):
         if not self.visible:
             return
         x, y, w, h = self._rect_px(ctx)
-        focused = ctx.get_focus(None) == self.button_id
+        focused = self.focusable and ctx.get_focus(None) == self.button_id
         border_color = "blink18" if focused else self.color
         ctx.draw_rect(border_color, x, y, w, h, filled=False, thickness=1)
+        status_color = self._resolve_status_color(ctx)
+        if status_color is None and self._resolve_bool(self.lighted, ctx):
+            status_color = self.light_color or self.color
+        if status_color is not None:
+            ctx.draw_rect(status_color, x + 2, y + 2, w - 4, h - 4, filled=True, thickness=1)
         if focused:
             ctx.draw_rect(self.color, x + 2, y + 2, w - 4, h - 4, filled=False, thickness=1)
         if self.selected:

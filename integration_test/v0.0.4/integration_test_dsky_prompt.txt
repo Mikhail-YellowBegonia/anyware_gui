@@ -1,0 +1,23 @@
+Integration Test Prompt (DSKY GUI Reproduction)
+Status: Temporary guidance for AI coding challenge
+
+Goal
+- Recreate the Apollo DSKY interface layout using Anyware (raw GUI allowed).
+- Prioritize layout fidelity and interaction placeholders over full functionality.
+
+Guidance (keep it short in the implementation)
+- Use grid-first layout; convert to pixels only for shapes.
+- Use Anyware components where possible: Label, Button, SegmentDisplay, MeterBar/DialGauge if helpful.
+- SegmentDisplay: only 7-seg digits + decimal point.
+- Buttons: use Button with pressable/focusable; status lights are non-pressable buttons with status fill.
+- Keep Page logic minimal: single page or PageRouter with explicit switch only.
+
+Layout hints (visual)
+- Top row: two panels; left is status list, right is numeric display.
+- Bottom: keypad matrix with labeled buttons.
+- Keep margins consistent; use thick borders for panel frames.
+
+Integration test rules
+- Avoid deep app logic; show placeholders for states.
+- Deterministic rendering: no randomness, no time-based animations.
+- Use a single entrypoint script under apps/ for the test.

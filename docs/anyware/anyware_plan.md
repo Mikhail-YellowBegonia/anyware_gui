@@ -1,6 +1,6 @@
 # Anyware Plan
 
-Anyware version: 0.0.4  
+Anyware version: 0.0.5  
 Target MVP version: 0.1.0  
 GUI dependency baseline: `GUI_API_LEVEL >= 1`  
 Doc role: planning/architecture (tutorial is `../GUI_TUTORIAL.md`)
@@ -54,7 +54,7 @@ This is the full planning inventory, not the immediate MVP scope.
 
 ### A. Structure / Page
 - `Page`
-- `PageStack` (`push/pop/replace`)
+- `PageRouter` (simple switch)
 - `Panel`
 - `Modal`
 - `Tabs`
@@ -63,6 +63,7 @@ This is the full planning inventory, not the immediate MVP scope.
 - `Label`
 - `Button`
 - `ButtonArray`
+- `Button` supports optional status/lighting (StatusLight merged)
 - `Checkbox`
 - `CheckboxMenu`
 - `RadioGroup`
@@ -70,10 +71,9 @@ This is the full planning inventory, not the immediate MVP scope.
 
 ### C. Display / Instrument
 - `ValueText`
-- `ProgressBar`
-- `RoundGauge`
-- `FanGauge`
-- `StatusLight`
+- `MeterBar` (bar/segments)
+- `DialGauge` (round/fan via config)
+- `SegmentDisplay` (P0.5)
 - `TrendLine` (post-MVP)
 
 ### D. Feedback / Utility
@@ -179,9 +179,19 @@ Minimum component set:
 - `Button`
 - `ButtonArray`
 - `CheckboxMenu`
-- `RoundGauge`
-- `FanGauge`
-- `PageStack` (minimal push/pop/replace only)
+- `ValueText`
+- `MeterBar`
+- `DialGauge`
+- `SegmentDisplay` (P0.5)
+- `PageRouter` (finite switch only)
+
+## 5.1 Page Logic (FSM Only)
+- Page logic is a finite-state switch across a known set of pages.
+- No stack, no history, no transitions beyond `switch(page_id)`.
+- Keep page orchestration minimal for early Anyware integration tests.
+
+## 5.2 AI Coding Tips (Integration Prep)
+- See `ai_coding_tips.md` for a compact checklist before test runs.
 
 Minimum conventions:
 - clear separation of focus vs select
@@ -227,6 +237,10 @@ Must satisfy all:
 - Anyware path
 - grid/pixel conversion rules
 - demo archive usage (`demo_archive.md`)
+
+## 8) Change Log
+- 2026-02-13: Merged `StatusLight` into `Button` (non-pressable status button + optional lighting), implemented P0/P0.5 instruments, added per-component docs, and wired them into the demo page.
+- 2026-02-13: Added `PageRouter` for FSM-style page switching and documented page logic constraints.
 
 ## 8) Version Changelog (Anyware)
 - 0.0.4 (2026-02-13):

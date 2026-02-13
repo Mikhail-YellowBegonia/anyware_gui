@@ -1,12 +1,20 @@
-import math
-
 import pygame
 
 from _bootstrap import FONTS_DIR, ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from core.anyware import AnywareApp, ButtonArray, Label, Page
+from core.anyware import (
+    AnywareApp,
+    Button,
+    ButtonArray,
+    DialGauge,
+    Label,
+    MeterBar,
+    Page,
+    SegmentDisplay,
+    ValueText,
+)
 
 
 class DemoArchivePage(Page):
@@ -19,9 +27,77 @@ class DemoArchivePage(Page):
         self.add(Label(gx=2, gy=1, text="ANYWARE DEMO ARCHIVE", color="CRT_Cyan"))
         self.add(Label(gx=2, gy=2, text="TEMP SHOWCASE OF STABLE COMPONENTS", color="CRT_Cyan"))
         self.add(Label(gx=2, gy=3, text="ARROWS:navigate  ENTER/SPACE:select  ESC:quit", color="CRT_Cyan"))
-        self.add(Label(gx=2, gy=5, text=lambda _: f"VALUE: {self.value:05.1f}", color="CRT_Cyan"))
-        self.add(Label(gx=24, gy=5, text=lambda _: f"SELECT: {self.selected}", color="CRT_Cyan"))
+        self.add(ValueText(gx=2, gy=5, label="VALUE", value=lambda _: self.value, fmt="{:05.1f}", color="CRT_Cyan"))
+        self.add(ValueText(gx=24, gy=5, label="SELECT", value=lambda _: self.selected, color="CRT_Cyan"))
         self.add(Label(gx=56, gy=8, text="VERT", color="CRT_Cyan", orientation="vertical", line_step=2))
+
+        self.add(
+            MeterBar(
+                gx=2,
+                gy=8,
+                width_px=140,
+                height_px=10,
+                value=lambda _: self.value,
+                min_value=0,
+                max_value=100,
+                mode="bar",
+                color="CRT_Cyan",
+                empty_color="CRT_BlueDark",
+            )
+        )
+        self.add(
+            MeterBar(
+                gx=2,
+                gy=10,
+                width_px=140,
+                height_px=10,
+                value=lambda _: self.value,
+                min_value=0,
+                max_value=100,
+                mode="segments",
+                segments=8,
+                color="CRT_Cyan",
+                empty_color="CRT_BlueDark",
+            )
+        )
+        self.add(
+            DialGauge(
+                center_gx=26,
+                center_gy=18,
+                radius_px=24,
+                value=lambda _: self.value,
+                min_value=0,
+                max_value=100,
+                start_angle_deg=-135,
+                end_angle_deg=135,
+                style="both",
+                color="CRT_Cyan",
+            )
+        )
+        self.add(
+            Button(
+                "status_light",
+                "STATUS",
+                gx=44,
+                gy=4,
+                width_px=70,
+                height_px=20,
+                pressable=False,
+                focusable=False,
+                status=lambda *_: self._status(),
+                status_color_map={"ok": "CRT_Green", "warn": "CRT_Yellow", "fail": "CRT_Red"},
+            )
+        )
+        self.add(
+            SegmentDisplay(
+                gx=2,
+                gy=24,
+                text=lambda _: f"{self.value:05.1f}",
+                digits=6,
+                on_color="CRT_Cyan",
+                off_color="CRT_BlueDark",
+            )
+        )
 
         self.buttons = ButtonArray(
             "archive_buttons",
@@ -46,35 +122,23 @@ class DemoArchivePage(Page):
     def _on_select(self, button, ctx) -> None:
         self.selected = button.label
 
+    def _status(self) -> str:
+        if self.value < 40:
+            return "ok"
+        if self.value < 70:
+            return "warn"
+        return "fail"
+
     def handle_event(self, event, ctx) -> bool:
         if event.type == pygame.KEYDOWN and ctx.key_to_focus_direction(event.key) is not None:
             ctx.move_focus_by_key(event.key)
             return True
         return super().handle_event(event, ctx)
 
-    def _draw_arc_gauge(self, ctx, x_px: float, y_px: float, value: float):
-        ratio = max(0.0, min(1.0, value / 100.0))
-        radius = 24.0
-        sweep = 270.0
-        fill = sweep * ratio
-
-        def arc_points(sweep_deg):
-            points = []
-            for deg in range(0, int(round(sweep_deg)) + 1):
-                rad = math.radians(deg)
-                points.append((math.cos(rad) * radius, math.sin(rad) * radius))
-            return points
-
-        total = [(0.0, 0.0)] + arc_points(sweep) + [(0.0, 0.0)]
-        filled = [(0.0, 0.0)] + arc_points(fill) + [(0.0, 0.0)]
-        ctx.draw_poly(filled, "CRT_Cyan", x_px, y_px, filled=True, thickness=1)
-        ctx.draw_poly(total, "CRT_Cyan", x_px, y_px, filled=False, thickness=1)
-
     def render(self, ctx) -> None:
         self.value = ctx.step_dynamic_offset(self.channel, speed=0.5, wrap=100.0)
 
         ctx.draw_box(0, 0, 60, 30, "CRT_Cyan", thickness=2)
-        self._draw_arc_gauge(ctx, ctx.gx(26), ctx.gy(18), self.value)
 
         super().render(ctx)
         ctx.draw_focus_frame("blink18", padding=2.0, thickness=1.2)
