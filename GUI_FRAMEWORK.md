@@ -1,12 +1,13 @@
 # GUI Framework Notes
 
-Version: 0.3.8
-Last Updated: 2026-02-12
+Version: 0.3.9
+Last Updated: 2026-02-13
 
-## 0) Documentation Split (Shared Version)
+## 0) Documentation Split
 - This file is the **feature/planning** document.
 - Tutorial is maintained in `GUI_TUTORIAL.md`.
-- Both documents follow the same version tag (`0.3.8` currently).
+- GUI and Anyware no longer share a version number.
+- Dependency now uses GUI engine contract (`GUI_API_LEVEL`) instead of doc-level shared tags.
 
 ## 1) Overview
 - Core is a grid-based text renderer with overlay drawing.
@@ -55,14 +56,23 @@ Feature intake policy (from app scripts):
 - `PIXEL_SCALE` applies to final render pixels.
 
 ## 3) Recommended Frame Flow
-1. `reset_overlays()`
-2. `clear_screen(...)` (or `clear_row/clear_cell`)
-3. Write text (`static/hstatic/ani_char/sweep`)
-4. Enqueue overlays (`draw_poly/draw_rect/draw_pattern_*`)
-5. `render(GUI.screen, GUI.screen_color)`
-6. `draw_to_surface(surface)`
+1. `begin_frame(clear_char=' ', clear_color=...)`
+2. Write text (`static/hstatic/ani_char/sweep`)
+3. Enqueue overlays (`draw_poly/draw_rect/draw_pattern_*`)
+4. `finish_frame(surface)`
+5. `pygame.display.flip()` (in app loop)
+6. `clock.tick(target_fps)` (in app loop)
 
 ## 4) API Summary
+
+### 4.0 Engine Contract and Versioning
+- `GUI_ENGINE_VERSION`: engine semantic version.
+- `GUI_API_LEVEL`: compatibility gate used by dependent layers.
+- `get_engine_manifest()`: machine-readable engine metadata.
+- `require_api_level(min_api_level)`: hard-check dependency compatibility.
+- `get_api_contract()`: tiered API list (`stable` / `experimental` / `legacy_internal`).
+- Rule:
+  - Anyware depends on GUI by API level + stable API, not by synchronized version tags.
 
 ### 4.1 Display / Window
 - `set_display_defaults(...)`
@@ -70,6 +80,10 @@ Feature intake policy (from app scripts):
 - `get_display_defaults()`
 - `get_window_size_px()`
 - `get_window_flags(extra_flags=0)`
+- `next_frame(step=1)`
+- `begin_frame(...)`
+- `finish_frame(surface, flip=False)`
+- `GuiRuntime` / `create_runtime(...)` (Anyware-facing lifecycle facade)
 
 Supported override keys:
 - `fps`, `target_fps`
@@ -172,6 +186,45 @@ Blocker mechanism:
 ### 4.7 Palette
 - `refresh_palette_cache()`
 
+### 4.8 Track C Requirement Split: Non-Loop Animation (Engine Side)
+Core statement:
+- Frame-by-frame rendering is not the blocker for non-loop animation.
+- Non-loop animation is a finite timeline/state-machine problem; each frame only renders current state.
+
+Engine-side requirements (proposed):
+1. G-ANM-01 Progress-based line draw (P0)
+- API proposal: `draw_line_progress(p1, p2, progress, color, thickness=1.0, ...)`
+- Purpose: reveal line from 0% to 100% with deterministic progress.
+- Ownership: `GUI.py`
+
+2. G-ANM-02 Progress-based poly stroke draw (P0)
+- API proposal: `draw_poly_progress(shape_or_vertices, progress, color, mode='stroke', ...)`
+- Purpose: "shape gradually lights up" boot-style reveal.
+- Ownership: `GUI.py`
+
+3. G-ANM-03 Text metric query (P1)
+- API proposal: `measure_text(content, *, ascii_font=None, cjk_font=None) -> (w_px, h_px)`
+- Purpose: layout/animation sync for text boxes and label reveals.
+- Ownership: `GUI.py`
+
+4. G-ANM-04 Optional clip primitive (P2)
+- API proposal: `set_clip_rect(x_px, y_px, w_px, h_px)` / `clear_clip_rect()`
+- Purpose: reveal windows/mask-like transitions.
+- Ownership: `GUI.py`
+
+5. G-ANM-05 Stable timing access (P1)
+- Requirement: expose consistent elapsed/delta helpers for deterministic updates.
+- Note: can be wrapped over existing frame loop timing, no need for heavy runtime changes.
+- Ownership: `GUI.py`
+
+What should NOT be in GUI engine:
+- sequence choreography
+- scene/page transition policy
+- easing presets and staged script authoring
+- component lifecycle semantics
+
+These belong to `Anyware.py` and app-level orchestration.
+
 ## 5) Example Script
 - `app_example.py` includes:
   - text APIs
@@ -198,9 +251,16 @@ Blocker mechanism:
   - Keep this as a lightweight orchestration layer above GUI core.
 - Track B status:
   - Done (Q1+Q2+Q3): layer boundary, doc split, and AI-coding-friendly tutorial guidance completed.
+- Track C preparation status:
+  - Non-loop animation requirement split completed (engine vs Anyware ownership defined).
+- Engine contract status (new):
+  - Added lifecycle entrypoints: `begin_frame` / `finish_frame`.
+  - Added version/compat metadata: `GUI_ENGINE_VERSION`, `GUI_API_LEVEL`.
+  - Added Anyware-facing facade: `GuiRuntime`.
+  - Added tiered API contract export: `get_api_contract()`.
 
-## 7) v0.3.8 -> v0.4.0 Mini Plan
-Goal: close current TODOs, re-evaluate architecture with Anyware in scope, and ship a usable Anyware alpha entry.
+## 7) v0.3.9 -> v0.4.x Plan
+Goal: keep GUI as independently releasable engine, while Anyware evolves as a dependent layer.
 
 ### Track A: Finish Current TODO (GUI Core)
 Status: Done (2026-02-12)
@@ -247,7 +307,17 @@ Status:
   - Docs reflect both paths clearly (raw API + Anyware API).
 - Otherwise: keep Anyware as design/prototype and release only core improvements in v0.4.0.
 
+### Track D: Dependency Decoupling (New)
+1. Freeze GUI stable API list for Anyware consumption.
+2. Require Anyware startup compatibility check via `require_api_level(...)`.
+3. Keep GUI changelog and Anyware changelog independent.
+4. Add migration notes when stable API behavior changes.
+
 ## 8) Change Log
+- 0.3.9 (2026-02-13): Anyware-side text componentization adopted on top of GUI text primitives (`Label/Text` + `ctx.label()/ctx.text()`), and a temporary Anyware demo archive page (`app_anyware_demo.py`) added for iterative component showcase.
+- 0.3.9 (2026-02-13): Started Anyware dependency-mode adoption with class-based bootstrap on dependent side (`AnywareApp`/`AnywareContext`/`PageStack`, plus initial `Button`/`ButtonArray`), while keeping GUI as independent engine contract provider.
+- 0.3.9 (2026-02-13): Introduced engine contract primitives for independent versioning: `GUI_ENGINE_VERSION`, `GUI_API_LEVEL`, `get_engine_manifest()`, `require_api_level()`, `get_api_contract()`. Added canonical frame lifecycle helpers `begin_frame()`/`finish_frame()` and `GuiRuntime` facade for Anyware dependency boundary.
+- 0.3.8 (2026-02-12): Added Track C non-loop-animation requirement split on GUI side (`G-ANM-*`): progress draw primitives, metric query, optional clipping, and timing access boundaries.
 - 0.3.8 (2026-02-12): Completed Track B closure items: doc split into feature/planning + tutorial, unified versioning, and AI-coding-oriented grid-first guidance (AI as logic implementer; manual polish by player/developer).
 - 0.3.8 (2026-02-12): Recorded Track B Q1 architecture consensus: 3-layer contract (`GUI.py`/`Anyware.py`/use-cases), dependency direction, app->GUI feature intake policy, and `Sound.py` independent placeholder boundary.
 - 0.3.8 (2026-02-12): Track A marked complete after validation; documented focus/select state separation, active scope behavior, blocker rejection rules, and directional resolve order; synchronized examples section with `app_gauges_example.py` multi-scope + checklist demo.

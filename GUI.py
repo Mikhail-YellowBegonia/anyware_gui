@@ -7,6 +7,39 @@ import pygame.freetype
 import unicodedata
 from dataclasses import dataclass
 
+# region version and compatibility
+GUI_ENGINE_NAME = "krpc-gui"
+GUI_ENGINE_VERSION = "0.3.9"
+GUI_ENGINE_RELEASE_DATE = "2026-02-13"
+GUI_API_LEVEL = 1
+GUI_DEPENDENCY_MODEL = "standalone"
+
+@dataclass(frozen=True)
+class EngineManifest:
+    name: str
+    version: str
+    release_date: str
+    api_level: int
+    dependency_model: str
+
+def get_engine_manifest():
+    """Return machine-readable engine metadata for dependent layers."""
+    return {
+        "name": GUI_ENGINE_NAME,
+        "version": GUI_ENGINE_VERSION,
+        "release_date": GUI_ENGINE_RELEASE_DATE,
+        "api_level": GUI_API_LEVEL,
+        "dependency_model": GUI_DEPENDENCY_MODEL,
+    }
+
+def require_api_level(min_api_level: int):
+    """Raise when dependent layer requires a newer GUI API level."""
+    if GUI_API_LEVEL < int(min_api_level):
+        raise RuntimeError(
+            f"{GUI_ENGINE_NAME} API level {GUI_API_LEVEL} is lower than required {int(min_api_level)}"
+        )
+    return True
+
 # 无边框窗口拖动支持
 def _get_move_window_func():
     if sys.platform == "win32":
@@ -315,6 +348,29 @@ def get_window_flags(extra_flags=0):
     if window_noframe:
         flags |= pygame.NOFRAME
     return flags
+
+def next_frame(step=1):
+    """Advance global frame counter by step and return current frame."""
+    global frame
+    frame += max(1, int(step))
+    return frame
+
+def begin_frame(*, clear_char=' ', clear_color=0, reset_overlay=True, advance_frame=True):
+    """Canonical frame start for dependent layers (Anyware-friendly)."""
+    if advance_frame:
+        next_frame(1)
+    if reset_overlay:
+        reset_overlays()
+    clear_screen(char=clear_char, color=clear_color)
+    return frame
+
+def finish_frame(surface, *, flip=False):
+    """Canonical frame finish for dependent layers (Anyware-friendly)."""
+    render(screen, screen_color)
+    draw_to_surface(surface)
+    if flip:
+        pygame.display.flip()
+    return frame
 
 def _normalize_dynamic_channel(channel):
     if channel is None:
@@ -1449,6 +1505,142 @@ def draw_box(gx, gy, gw, gh, color, padding=None, thickness=None):
     thick = opts["thickness"]
     p1, p2, p3, p4 = grid_to_px(gx,gy,-pad,-pad), grid_to_px(gx+gw,gy,pad,-pad), grid_to_px(gx,gy+gh,-pad,pad), grid_to_px(gx+gw,gy+gh,pad,pad)
     line_queue.extend([(p1[0],p1[1],p2[0],p2[1],c,thick), (p3[0],p3[1],p4[0],p4[1],c,thick), (p1[0],p1[1],p3[0],p3[1],c,thick), (p2[0],p2[1],p4[0],p4[1],c,thick)])
+
+# endregion
+
+# region API contract and Anyware-facing runtime
+STABLE_API = (
+    "get_engine_manifest",
+    "require_api_level",
+    "get_display_defaults",
+    "set_display_defaults",
+    "reset_display_defaults",
+    "get_window_size_px",
+    "get_window_flags",
+    "set_fonts",
+    "set_font",
+    "next_frame",
+    "begin_frame",
+    "finish_frame",
+    "reset_overlays",
+    "clear_screen",
+    "clear_row",
+    "clear_cell",
+    "static",
+    "hstatic",
+    "ani_char",
+    "sweep",
+    "grid_to_px",
+    "gx",
+    "gy",
+    "px",
+    "py",
+    "draw_box",
+    "draw_rect",
+    "draw_poly",
+    "draw_pattern_rect",
+    "draw_pattern_poly",
+    "add_poly",
+    "add_poly_transformed",
+    "rescale_poly_vertices",
+    "rotate_poly_vertices",
+    "transform_poly_vertices",
+    "set_dynamic_offset",
+    "get_dynamic_offset",
+    "step_dynamic_offset",
+    "reset_dynamic_offsets",
+    "add_focus_node",
+    "update_focus_node",
+    "remove_focus_node",
+    "clear_focus_nodes",
+    "set_focus",
+    "get_focus",
+    "add_focus_blocker",
+    "update_focus_blocker",
+    "remove_focus_blocker",
+    "clear_focus_blockers",
+    "set_active_focus_scope",
+    "get_active_focus_scope",
+    "move_focus",
+    "move_focus_by_key",
+    "key_to_focus_direction",
+    "draw_focus_frame",
+    "draw_focus_blockers",
+)
+
+EXPERIMENTAL_API = (
+    "list_focus_scopes",
+    "grid_rect_to_px",
+)
+
+LEGACY_INTERNAL_API = (
+    "_get_move_window_func",
+    "_set_window_always_on_top",
+)
+
+def get_api_contract():
+    """Return tiered API contract for dependent layers."""
+    return {
+        "stable": list(STABLE_API),
+        "experimental": list(EXPERIMENTAL_API),
+        "legacy_internal": list(LEGACY_INTERNAL_API),
+    }
+
+class GuiRuntime:
+    """Anyware-facing runtime facade with stable lifecycle entrypoints."""
+
+    def __init__(self, *, min_api_level=1):
+        require_api_level(min_api_level)
+        self.manifest = get_engine_manifest()
+
+    def begin_frame(self, *, clear_char=' ', clear_color=0, reset_overlay=True, advance_frame=True):
+        return begin_frame(
+            clear_char=clear_char,
+            clear_color=clear_color,
+            reset_overlay=reset_overlay,
+            advance_frame=advance_frame,
+        )
+
+    def finish_frame(self, surface, *, flip=False):
+        return finish_frame(surface, flip=flip)
+
+    def assert_api_level(self, min_api_level):
+        return require_api_level(min_api_level)
+
+def create_runtime(*, min_api_level=1):
+    return GuiRuntime(min_api_level=min_api_level)
+
+__all__ = (
+    "GUI_ENGINE_NAME",
+    "GUI_ENGINE_VERSION",
+    "GUI_ENGINE_RELEASE_DATE",
+    "GUI_API_LEVEL",
+    "GUI_DEPENDENCY_MODEL",
+    "EngineManifest",
+    "STABLE_API",
+    "EXPERIMENTAL_API",
+    "LEGACY_INTERNAL_API",
+    "get_api_contract",
+    "GuiRuntime",
+    "create_runtime",
+    "frame",
+    "fps",
+    "target_fps",
+    "char_resolution",
+    "row_column_resolution",
+    "char_block_spacing_px",
+    "line_block_spacing_px",
+    "border_padding_px",
+    "PIXEL_SCALE",
+    "window_noframe",
+    "window_always_on_top",
+    "window_bg_color_rgb",
+    "loading_animation",
+    "blk",
+    "hol",
+    *STABLE_API,
+    *EXPERIMENTAL_API,
+)
 
 # endregion
 

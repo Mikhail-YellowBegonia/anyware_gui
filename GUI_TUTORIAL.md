@@ -1,7 +1,7 @@
 # GUI Tutorial
 
-Version: 0.3.8
-Last Updated: 2026-02-12
+Version: 0.3.9
+Last Updated: 2026-02-13
 Doc role: tutorial/learning path (feature/planning doc is `GUI_FRAMEWORK.md`)
 
 ## 0) Before You Start
@@ -28,15 +28,16 @@ Parameter standard:
 - Rect call: pixel
 
 ```python
-GUI.reset_overlays()
-GUI.clear_screen()
+GUI.begin_frame(clear_color="Black")
 
 GUI.static(1, 1, "CRT_Cyan", "Hello")  # grid
 GUI.draw_rect("CRT_Cyan", GUI.gx(1), GUI.gy(3), 64, 18, filled=False, thickness=1)  # pixel
 
-GUI.render(GUI.screen, GUI.screen_color)
-GUI.draw_to_surface(screen_surf)
+GUI.finish_frame(screen_surf)
 ```
+
+Engine contract tip:
+- For Anyware integration, prefer `runtime = GUI.create_runtime(min_api_level=1)` and call `runtime.begin_frame(...)` / `runtime.finish_frame(...)`.
 
 ## 2) Coordinate-Safe Text + Shape Composition
 Goal: draw shape by pixel anchor, then label near center.
@@ -138,7 +139,9 @@ GUI.draw_focus_blockers("blink10", scope="main", thickness=1)
 1. Read `app_template.py` for minimal structure.
 2. Read `app_example.py` for API surface.
 3. Read `app_gauges_example.py` for advanced composition (scope/blocker/checklist).
-4. Then decide:
+4. Read `app_anyware_template.py` and `app_anyware_gauges.py` for class-based Anyware path.
+5. Read `app_anyware_demo.py` as temporary Anyware demo archive page.
+6. Then decide:
 - stay raw `GUI.py` for precise control, or
 - move to Anyware components for faster assembly.
 

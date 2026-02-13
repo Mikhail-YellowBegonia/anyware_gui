@@ -1,8 +1,8 @@
 # Anyware Plan
 
-Anyware version: 0.0.1  
+Anyware version: 0.0.4  
 Target MVP version: 0.1.0  
-Shared doc version: 0.3.8  
+GUI dependency baseline: `GUI_API_LEVEL >= 1`  
 Doc role: planning/architecture (tutorial is `GUI_TUTORIAL.md`)
 
 ## 1) Positioning
@@ -17,10 +17,22 @@ Doc role: planning/architecture (tutorial is `GUI_TUTORIAL.md`)
 1. `GUI.py` (engine):
 - rendering primitives, coordinate conversion, focus/nav internals, draw queues, defaults.
 - no business widget semantics.
+- publishes compatibility via `GUI_API_LEVEL` and stable API contract.
 
 2. `Anyware.py` (components):
 - reusable widgets, page/scope composition helpers, interaction conventions.
 - wraps `GUI.py`, no reverse dependency.
+- validates dependency at startup via `require_api_level(...)`.
+
+### 2.1 App API Access Policy
+- Default path: app code should call Anyware classes/context only.
+- Text policy: Anyware app code should use `Label/Text` component or `ctx.label()/ctx.text()`, not `static/hstatic` directly.
+- Escape hatch: raw `GUI.py` access is allowed only as explicit opt-in (debug/migration/specialized rendering).
+- Enforce by runtime flag:
+  - `allow_raw_gui=False` by default.
+  - `ctx.raw_gui()` raises when raw access is not explicitly enabled.
+- Long-term target:
+  - keep raw access usage close to zero in production Anyware apps.
 
 3. Use-case scripts (`app_*.py`):
 - demos, template references, experimental integration.
@@ -124,6 +136,42 @@ Decision:
 Decision:
 - not in current project responsibility (N/A for v0.1.0).
 
+### 4.5 Non-Loop Animation Split (Anyware Side)
+Design statement:
+- Non-loop animation is a finite sequence over time, not a special render mode.
+- Anyware owns "what happens when"; GUI owns "how current frame is drawn".
+
+Anyware requirements (proposed):
+1. A-ANM-01 Timeline container (P0)
+- `IntroSequence` supports ordered steps with `delay`, `duration`, `once`.
+- can stop at final frame/state (non-loop by default).
+
+2. A-ANM-02 Step model (P0)
+- step receives normalized `progress` in `[0, 1]`.
+- step can target component props (visibility, color level, gauge fill, text reveal length).
+
+3. A-ANM-03 Trigger/finish protocol (P0)
+- explicit lifecycle: `idle -> running -> finished`.
+- supports one-shot start for boot animation.
+
+4. A-ANM-04 Easing and defaults (P1)
+- built-in minimal easing set (`linear`, `ease_in`, `ease_out`).
+- default should be conservative and predictable for AI-generated templates.
+
+5. A-ANM-05 Interrupt and skip policy (P1)
+- allow "skip animation" and jump to final stable state.
+- required for practical UX and debugging.
+
+6. A-ANM-06 Scope-safe interaction during animation (P1)
+- define whether focus/navigation is disabled, limited, or fully enabled while intro plays.
+- default policy should avoid ambiguous interaction states.
+
+Dependencies on GUI requirements:
+- A-ANM-01/02 depend on `G-ANM-01` and `G-ANM-02` for progressive drawing.
+- A-ANM-02 depends on `G-ANM-03` for text-bound animation sizing.
+- A-ANM-04/05 benefit from `G-ANM-05` stable timing helpers.
+- A-ANM-06 can be implemented with existing focus/scope APIs.
+
 ## 5) MVP Scope for Anyware 0.1.0
 Minimum component set:
 - `Button`
@@ -147,14 +195,23 @@ M1. Baseline freeze (done in 0.0.1):
 M2. GUI prerequisite patch:
 - evaluate and implement `draw_*_progress` and/or `measure_text` if accepted
 - update docs and one demo
+Exit criteria:
+- at least one progress draw primitive available
+- one boot-style reveal demo proves non-loop timeline feasibility
 
 M3. Anyware component implementation:
 - implement MVP components with shared style/default model
 - provide one medium-complexity page demo
+Exit criteria:
+- `IntroSequence` one-shot flow usable with component states
+- animation can end in stable interactive page state
 
 M4. Workflow validation:
 - run target workflow:
   - hand-drawn layout -> natural language + rough coordinates -> AI first-pass -> limited rework -> human tuning -> verification
+Exit criteria:
+- AI output is logically correct before manual polish
+- manual work is primarily spacing/style tuning, not behavior rewrite
 
 ## 7) Acceptance Criteria for Anyware 0.1.0
 Must satisfy all:
@@ -167,9 +224,25 @@ Must satisfy all:
 - raw GUI path
 - Anyware path
 - grid/pixel conversion rules
+- demo archive usage (`subproject_anyware/demo_archive.md`)
 
 ## 8) Version Changelog (Anyware)
+- 0.0.4 (2026-02-13):
+  - introduced text componentization: `Label`, `Text` (supports `orientation` + `color`)
+  - added Anyware text drawing aliases: `ctx.label()` / `ctx.text()`; `ctx.static()`/`ctx.hstatic()` kept as compatibility path
+  - migrated current Anyware demos to label-first usage
+  - added `app_anyware_demo.py` as temporary Anyware demo archive page
+- 0.0.3 (2026-02-13):
+  - introduced class-based Anyware runtime skeleton: `AnywareApp`, `AnywareContext`, `Page`, `PageStack`, `Component`, `ComponentGroup`
+  - added first reusable controls: `Button`, `ButtonArray`
+  - enforced GUI stable API dependency check inside `AnywareContext` (`REQUIRED_GUI_STABLE_API`)
+  - added migration demos: `app_anyware_template.py`, `app_anyware_gauges.py`
+  - kept raw GUI access as explicit opt-in only (`allow_raw_gui`, `ctx.raw_gui()`)
+- 0.0.2 (2026-02-13):
+  - switched from shared GUI/Anyware doc versioning to dependency contract mode
+  - Anyware now targets GUI compatibility by `GUI_API_LEVEL` and stable API tier
 - 0.0.1 (2026-02-12):
   - formalized component universe
   - completed GUI capability gap review with ownership decisions
+  - added detailed non-loop animation split (`A-ANM-*`) and dependency mapping to GUI-side requirements (`G-ANM-*`)
   - defined 0.1.0 MVP scope, milestones, and acceptance criteria

@@ -52,19 +52,16 @@ def main():
 
         current_time = time.time()
         if current_time - last_logic_time >= logic_interval:
-            GUI.frame += 1
-            GUI.reset_overlays()
-            GUI.clear_screen()
+            GUI.begin_frame(clear_color="Black")
 
             # --- APPLICATION SCENE LOGIC ---
             GUI.draw_box(0, 0, 21, 5, "CRT_Cyan")
             GUI.static(1, 1, "CRT_Cyan", "TEMPLATE")
             # -------------------------------
 
-            GUI.render(GUI.screen, GUI.screen_color)
+            GUI.finish_frame(screen_surf)
             last_logic_time = current_time
 
-        GUI.draw_to_surface(screen_surf)
         pygame.display.flip()
         clock.tick(GUI.target_fps)
 
