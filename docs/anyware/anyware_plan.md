@@ -1,9 +1,18 @@
 # Anyware Plan
 
-Anyware version: 0.0.5  
+Anyware version: 0.0.6  
 Target MVP version: 0.1.0  
 GUI dependency baseline: `GUI_API_LEVEL >= 1`  
-Doc role: planning/architecture (tutorial is `../GUI_TUTORIAL.md`)
+Doc role: planning/architecture (tutorial is `../GUI_TUTORIAL.md`, reference is `../DEV_GUIDE.md`)
+
+## 0) Active Anyware Work Items
+- ANY-PAGESTACK: PageStack runtime integration in AnywareApp. Status: Done (2026-02-15)
+- ANY-TEMPLATE-RELOAD: Anyware template supports hot reload for layout params. Status: Done (2026-02-15)
+- ANY-BUTTON-ALIGN: Button label alignment + multiline support. Status: Done (2026-02-15)
+- ANY-DYNAMIC-COMPONENTS: flat reconcile-based dynamic component management. Status: Done (2026-02-15)
+- ANY-SEGMENT-DEFAULTS: SegmentDisplay global defaults (size, spacing, colors). Status: Pending
+- ANY-SEGMENT-THEME: SegmentDisplay global theme or shared style defaults. Status: Pending
+- ANY-CHECKBOX-MENU: implement `CheckboxMenu` (MVP component). Status: Pending
 
 ## 1) Positioning
 - Anyware is a high-level component layer above `core/GUI.py`.
@@ -75,6 +84,13 @@ This is the full planning inventory, not the immediate MVP scope.
 - `DialGauge` (round/fan via config)
 - `SegmentDisplay` (P0.5)
 - `TrendLine` (post-MVP)
+
+Instrument consolidation decisions:
+- MeterBar merges progress/battery/signal/level into one component (bar vs segments).
+- DialGauge merges round/fan/arc gauges into one configurable component.
+- StatusLight is modeled as a non-pressable `Button` with status/lighting.
+- SegmentDisplay stays separate (design-driven logic, 7-seg baseline).
+- TrendLine is deferred (state ownership + sampling policy).
 
 ### D. Feedback / Utility
 - `Toast`
@@ -185,13 +201,13 @@ Minimum component set:
 - `SegmentDisplay` (P0.5)
 - `PageRouter` (finite switch only)
 
-## 5.1 Page Logic (FSM Only)
-- Page logic is a finite-state switch across a known set of pages.
-- No stack, no history, no transitions beyond `switch(page_id)`.
-- Keep page orchestration minimal for early Anyware integration tests.
+## 5.1 Page Logic (FSM + Stack)
+- AnywareApp now uses `PageStack` (push/pop/replace) for multi-page flows.
+- `PageRouter` remains available for simple FSM-only page switching.
+- Keep stack depth shallow during early integration tests; avoid hidden transitions.
 
 ## 5.2 AI Coding Tips (Integration Prep)
-- See `ai_coding_tips.md` for a compact checklist before test runs.
+- See `../AI_ASSISTED_DESIGN_GUIDE.md` for the checklist before test runs.
 
 Minimum conventions:
 - clear separation of focus vs select
@@ -199,10 +215,47 @@ Minimum conventions:
 - conservative defaults for AI template generation
 - explicit scope integration hooks (optional, but consistent)
 
-## 6) Roadmap (Canonical)
-Milestones and acceptance criteria are consolidated in `docs/ROADMAP.md` to avoid duplication across docs.
+## 5.3 Dynamic Component Management (Anyware-only)
+Goal: enable dynamic add/remove/replace of components without DOM/tree complexity.
 
-## 8) Change Log
+Route (agreed):
+- Use a flat, id-based reconcile list (no tree).
+- Each component must have a unique `component_id` (string is allowed and preferred).
+- If changes are large, switch pages instead of mass mutations.
+- Anyware only: `core/GUI.py` stays unchanged.
+
+Implementation contract:
+- `ComponentGroup.reconcile_children(ctx, next_children)` handles mount/unmount and replacement.
+- Focus fallback: if current focus id is no longer present, jump to any available focusable id.
+- Use `visible/enabled` for per-frame animation-like changes; avoid per-frame structural reconcile.
+- Id helper: use `stable_component_id(name, seed=...)` or `IdFactory.next(name)` to create stable, unique ids.
+
+## 6) Milestones and Acceptance (0.1.0)
+M1. Baseline freeze (done in 0.0.1):
+- architecture boundary confirmed
+- component universe and gap map written
+
+M2. GUI prerequisite patch (done in GUI v0.4.0):
+- text measurement helpers
+- text box + super text primitives
+
+M3. Anyware component implementation (in progress):
+- implement MVP components with shared style/default model
+- provide one medium-complexity demo that uses the MVP set
+
+Acceptance criteria (must satisfy all):
+1. A medium UI page can be assembled with fewer lines than raw GUI script.
+2. AI-generated template is logically correct on first pass:
+- coordinate types mostly correct
+- navigation and state transitions correct
+3. Remaining work is mainly human tuning/polish, not logic rewrite.
+4. Documentation clearly explains:
+- raw GUI path
+- Anyware path
+- grid/pixel conversion rules
+- demo archive usage (`demo_archive.md`)
+
+## 7) Change Log
 - 2026-02-13: Merged `StatusLight` into `Button` (non-pressable status button + optional lighting), implemented P0/P0.5 instruments, added per-component docs, and wired them into the demo page.
 - 2026-02-13: Added `PageRouter` for FSM-style page switching and documented page logic constraints.
 
@@ -216,7 +269,7 @@ Milestones and acceptance criteria are consolidated in `docs/ROADMAP.md` to avoi
   - introduced class-based Anyware runtime skeleton: `AnywareApp`, `AnywareContext`, `Page`, `PageStack`, `Component`, `ComponentGroup`
   - added first reusable controls: `Button`, `ButtonArray`
   - enforced GUI stable API dependency check inside `AnywareContext` (`REQUIRED_GUI_STABLE_API`)
-  - added migration demos: `apps/app_anyware_template.py`, `apps/app_anyware_gauges.py`
+  - added migration demos: `apps/app_anyware_template.py`, `apps/app_anyware_demo.py` (combined demo archive)
   - kept raw GUI access as explicit opt-in only (`allow_raw_gui`, `ctx.raw_gui()`)
 - 0.0.2 (2026-02-13):
   - switched from shared GUI/Anyware doc versioning to dependency contract mode

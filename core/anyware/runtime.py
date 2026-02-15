@@ -6,11 +6,11 @@ import pygame
 
 from core import GUI
 from .context import AnywareContext
-from .page import Page, PageRouter
+from .page import Page, PageStack
 
 
 class AnywareApp:
-    """Anyware application runtime with page routing."""
+    """Anyware application runtime with page stack."""
 
     def __init__(
         self,
@@ -28,7 +28,8 @@ class AnywareApp:
 
         self.runtime = GUI.create_runtime(min_api_level=min_gui_api_level)
         self.ctx = AnywareContext(self.runtime, allow_raw_gui=allow_raw_gui)
-        self.page_router = PageRouter()
+        self.page_stack = PageStack()
+        self.page_registry: dict[str, Page] = {}
 
         self.screen_surf = pygame.display.set_mode(GUI.get_window_size_px(), GUI.get_window_flags())
         pygame.display.set_caption(title)
@@ -53,20 +54,26 @@ class AnywareApp:
         return self
 
     def set_root_page(self, page: Page):
-        return self.page_router.set_current(page, self.ctx)
+        self.page_registry[page.page_id] = page
+        return self.page_stack.replace(page, self.ctx)
 
     def register_pages(self, pages: list[Page]):
-        self.page_router.add_many(pages)
+        for page in pages:
+            self.page_registry[page.page_id] = page
         return self
 
     def switch_page(self, page_id: str):
-        return self.page_router.switch(page_id, self.ctx)
+        page = self.page_registry.get(page_id)
+        if page is None:
+            return None
+        return self.page_stack.replace(page, self.ctx)
 
     def push_page(self, page: Page):
-        return self.page_router.set_current(page, self.ctx)
+        self.page_registry[page.page_id] = page
+        return self.page_stack.push(page, self.ctx)
 
     def pop_page(self):
-        return None
+        return self.page_stack.pop(self.ctx)
 
     def stop(self):
         self.running = False
@@ -78,7 +85,7 @@ class AnywareApp:
         if self.quit_on_escape and event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.running = False
             return True
-        return self.page_router.handle_event(event, self.ctx)
+        return self.page_stack.handle_event(event, self.ctx)
 
     def run(self):
         self.running = True
@@ -94,8 +101,8 @@ class AnywareApp:
                 frame = self.runtime.begin_frame(clear_color=self.clear_color)
                 self.ctx.set_frame_info(frame=frame, dt=dt)
 
-                self.page_router.update(self.ctx, dt)
-                self.page_router.render(self.ctx)
+                self.page_stack.update(self.ctx, dt)
+                self.page_stack.render(self.ctx)
 
                 self.runtime.finish_frame(self.screen_surf)
                 self._last_logic_time = now
@@ -103,5 +110,5 @@ class AnywareApp:
             pygame.display.flip()
             self.clock.tick(max(1, GUI.target_fps))
 
-        self.page_router.clear(self.ctx)
+        self.page_stack.clear(self.ctx)
         pygame.quit()

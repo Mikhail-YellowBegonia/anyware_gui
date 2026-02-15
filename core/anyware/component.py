@@ -27,6 +27,10 @@ class Component:
     def handle_event(self, event, ctx) -> bool:
         return False
 
+    def focus_ids(self) -> list[str]:
+        """Return focus node ids owned by this component (if any)."""
+        return []
+
     @property
     def mounted(self) -> bool:
         return self._mounted
@@ -51,6 +55,12 @@ class ComponentGroup(Component):
             return False
         self.children.remove(child)
         return True
+
+    def focus_ids(self) -> list[str]:
+        ids: list[str] = []
+        for child in self.children:
+            ids.extend(child.focus_ids())
+        return ids
 
     def mount(self, ctx) -> None:
         super().mount(ctx)
@@ -87,3 +97,51 @@ class ComponentGroup(Component):
             if child.handle_event(event, ctx):
                 return True
         return False
+
+    def reconcile_children(self, ctx, next_children: Iterable[Component], *, ensure_focus: bool = True) -> None:
+        """Replace children using id-based reconciliation (flat list).
+
+        Requirements:
+        - Every component must have a unique component_id (stringable).
+        - Use this only when dynamic add/remove/replace is needed.
+        """
+        next_list = list(next_children)
+        seen: set[str] = set()
+        next_by_id: dict[str, Component] = {}
+        for child in next_list:
+            cid = child.component_id
+            if cid is None:
+                raise ValueError("Dynamic reconcile requires component_id on every component.")
+            cid = str(cid)
+            if cid in seen:
+                raise ValueError(f"Duplicate component_id in reconcile: {cid}")
+            seen.add(cid)
+            next_by_id[cid] = child
+
+        # Unmount removed/replaced children.
+        for old in list(self.children):
+            oid = old.component_id
+            if oid is None:
+                if old.mounted:
+                    old.unmount(ctx)
+                continue
+            oid = str(oid)
+            new = next_by_id.get(oid)
+            if new is None or new is not old:
+                if old.mounted:
+                    old.unmount(ctx)
+
+        # Apply new list and mount newcomers.
+        self.children = next_list
+        for child in self.children:
+            if not child.mounted:
+                child.mount(ctx)
+
+        if ensure_focus:
+            focus_ids = self.focus_ids()
+            if focus_ids:
+                current = ctx.get_focus(None)
+                if current not in focus_ids:
+                    for fid in focus_ids:
+                        if ctx.set_focus(fid):
+                            break

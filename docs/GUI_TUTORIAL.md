@@ -1,7 +1,7 @@
 # GUI Tutorial
 
-Version: 0.3.9
-Last Updated: 2026-02-13
+Version: 0.4.0
+Last Updated: 2026-02-15
 Doc role: tutorial/learning path (feature/planning doc is `GUI_FRAMEWORK.md`)
 
 ## 0) Before You Start
@@ -139,40 +139,11 @@ GUI.draw_focus_blockers("blink10", scope="main", thickness=1)
 1. Read `apps/app_template.py` for minimal structure.
 2. Read `apps/app_example.py` for API surface.
 3. Read `apps/app_gauges_example.py` for advanced composition (scope/blocker/checklist).
-4. Read `apps/app_anyware_template.py` and `apps/app_anyware_gauges.py` for class-based Anyware path.
-5. Read `apps/app_anyware_demo.py` as temporary Anyware demo archive page.
+4. Read `apps/app_anyware_template.py` for Anyware template + hot reload layout params.
+5. Read `apps/app_anyware_demo.py` for the combined demo archive (multi-page via PageStack).
 6. Then decide:
 - stay raw `core/GUI.py` for precise control, or
 - move to Anyware components for faster assembly.
 
-## 9) AI Coding Strategy (Grid-First)
-Positioning:
-- In this project, AI is mainly responsible for **logical implementation**, not perfect visual design.
-- The player/developer performs detailed tuning, polish, and small bug fixing.
-
-Why grid-first for AI:
-- AI is weaker at exact spatial judgment in pixel-level layout.
-- Most functions can still be driven by grid references, then converted at render boundaries.
-- This provides "logically correct and principled" layout output, even before fine tuning.
-
-Recommended workflow:
-1. Ask AI to output layout in grid coordinates first.
-2. Keep text APIs in grid.
-3. Convert only draw anchors/rects to pixel with `gx()/gy()`.
-4. If a draw result returns pixel positions and you need labels, convert back with `px()/py()`.
-5. Manually tune spacing/size/thickness after logic is confirmed.
-
-Prompt guidance for AI-generated templates:
-- Explicitly request coordinate type per call:
-  - "Text calls must use grid coordinates."
-  - "Shape and node rect calls must use pixel coordinates converted from grid via gx/gy."
-- Explicitly request state split:
-  - "Focus rendering and select state update must be separate."
-- Explicitly request conservative defaults:
-  - "Prefer default parameters unless necessary."
-
-Minimum acceptance for AI output:
-- coordinate types are correct
-- navigation logic is correct
-- state transitions are correct
-- visual perfection can be deferred to manual tuning
+## 9) AI Coding
+AI workflow guidance lives in `AI_ASSISTED_DESIGN_GUIDE.md`.

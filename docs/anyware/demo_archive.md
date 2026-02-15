@@ -1,6 +1,6 @@
 # Anyware Demo Archive
 
-Last Updated: 2026-02-13
+Last Updated: 2026-02-15
 
 Purpose:
 - Keep a temporary, runnable showcase of current Anyware capabilities.
@@ -10,12 +10,15 @@ Purpose:
 Current demo entries:
 1. `apps/app_anyware_template.py`
 - Minimal lifecycle + focus wiring + label-first rendering.
+- Includes hot reload layout params from `apps/anyware_template_layout.py`.
 
-2. `apps/app_anyware_gauges.py`
-- Dynamic values + `ButtonArray` + label-first text usage under Anyware runtime.
+2. `apps/app_anyware_demo.py`
+- Combined demo archive page.
+- Includes multi-page push/pop via PageStack.
+- Includes dynamic component reconciliation page (press `D`).
 
-3. `apps/app_anyware_demo.py`
-- Temporary integrated archive page for stable components (`Label/Text`, `ButtonArray`, focus frame).
+Archived scratch apps:
+- `apps/archive/app_anyware_dynamic_temp.py` (single-page dynamic reconcile check)
 
 Archive policy:
 1. Keep demos runnable under current `GUI_API_LEVEL`.

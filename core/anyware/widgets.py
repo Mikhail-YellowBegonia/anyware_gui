@@ -124,6 +124,11 @@ class Button(Component):
             self.on_select(self, ctx)
         return True
 
+    def focus_ids(self) -> list[str]:
+        if not self.focusable:
+            return []
+        return [str(self.button_id)]
+
     def render(self, ctx) -> None:
         if not self.visible:
             return

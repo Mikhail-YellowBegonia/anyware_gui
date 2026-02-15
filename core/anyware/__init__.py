@@ -5,6 +5,7 @@ from .runtime import AnywareApp
 from .text import Label, Text
 from .widgets import Button, ButtonArray
 from .instruments import DialGauge, MeterBar, SegmentDisplay, ValueText
+from .id import IdFactory, stable_component_id
 
 __all__ = (
     "AnywareApp",
@@ -23,4 +24,6 @@ __all__ = (
     "MeterBar",
     "DialGauge",
     "SegmentDisplay",
+    "IdFactory",
+    "stable_component_id",
 )

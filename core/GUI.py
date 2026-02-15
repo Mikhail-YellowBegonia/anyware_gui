@@ -127,7 +127,7 @@ frame = 0
 fps = 10
 target_fps = 60 
 char_resolution = [16, 8]
-row_column_resolution = (60, 30)
+row_column_resolution = (80, 40)
 char_block_spacing_px = 1  
 line_block_spacing_px = 1  
 border_padding_px = 10  
@@ -229,6 +229,10 @@ index = [i for i in range(256)]
 _palette_name_to_index = {}
 _palette_rgb_cache = np.zeros((256, 3), dtype=np.uint8)
 
+_LAYOUT_MODE_ENABLED = False
+_LAYOUT_MODE_BG_RGB = (200, 190, 180)
+_LAYOUT_MODE_FG_RGB = (130, 159, 23)
+
 def refresh_palette_cache():
     """Rebuild palette lookup caches after mutating hsv_palette."""
     global _palette_name_to_index, _palette_rgb_cache
@@ -254,9 +258,39 @@ def _resolve_color(c):
     return c
 
 def get_color_rgb(color_index):
+    if _LAYOUT_MODE_ENABLED:
+        return _LAYOUT_MODE_FG_RGB
     idx = _resolve_color(color_index)
     rgb = _palette_rgb_cache[idx]
     return (int(rgb[0]), int(rgb[1]), int(rgb[2]))
+
+def set_layout_mode(enabled: bool, *, bg_rgb=None, fg_rgb=None):
+    """Toggle "layout mode" rendering (fixed palette for layout tuning).
+
+    - Background is forced to (200, 190, 180) by default.
+    - All other colors are forced to (130, 159, 23) by default.
+
+    This is a pure API toggle (no keybinding). Anyware apps can call this too.
+    """
+    global _LAYOUT_MODE_ENABLED, _LAYOUT_MODE_BG_RGB, _LAYOUT_MODE_FG_RGB
+    _LAYOUT_MODE_ENABLED = bool(enabled)
+    if bg_rgb is not None:
+        if isinstance(bg_rgb, (list, tuple)) and len(bg_rgb) == 3:
+            _LAYOUT_MODE_BG_RGB = tuple(max(0, min(255, int(v))) for v in bg_rgb)
+    if fg_rgb is not None:
+        if isinstance(fg_rgb, (list, tuple)) and len(fg_rgb) == 3:
+            _LAYOUT_MODE_FG_RGB = tuple(max(0, min(255, int(v))) for v in fg_rgb)
+    return _LAYOUT_MODE_ENABLED
+
+def get_layout_mode():
+    return bool(_LAYOUT_MODE_ENABLED)
+
+def get_layout_mode_colors():
+    return {
+        "enabled": bool(_LAYOUT_MODE_ENABLED),
+        "bg_rgb": tuple(_LAYOUT_MODE_BG_RGB),
+        "fg_rgb": tuple(_LAYOUT_MODE_FG_RGB),
+    }
 # endregion
 
 # region screen/font
@@ -831,7 +865,8 @@ def _focus_score(direction, cur_center, cand_center):
         secondary = abs(dy)
     else:
         return None
-    return (primary, secondary, dx * dx + dy * dy)
+    score = primary + 2.0 * secondary
+    return (score, dx * dx + dy * dy)
 
 def move_focus(direction):
     global FOCUS_CURRENT_ID, FOCUS_ACTIVE_SCOPE
@@ -1102,7 +1137,7 @@ def reset_overlays():
     super_text_queue.clear()
 
 def draw_to_surface(surface):
-    surface.fill(window_bg_color_rgb)
+    surface.fill(_LAYOUT_MODE_BG_RGB if _LAYOUT_MODE_ENABLED else window_bg_color_rgb)
     cols, rows = row_column_resolution
     ch_h, ch_w = char_resolution
     eff_w = (ch_w + char_block_spacing_px) * PIXEL_SCALE
@@ -1779,6 +1814,9 @@ STABLE_API = (
     "get_display_defaults",
     "set_display_defaults",
     "reset_display_defaults",
+    "set_layout_mode",
+    "get_layout_mode",
+    "get_layout_mode_colors",
     "get_window_size_px",
     "get_window_flags",
     "set_fonts",

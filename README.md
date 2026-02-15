@@ -11,7 +11,7 @@ Grid-based text UI engine with a lightweight component layer (Anyware) for assem
 
 ## Current Versions
 - **GUI Engine**: `0.4.0` (`core/GUI.py`)
-- **Anyware**: `0.0.5` (`docs/anyware/anyware_plan.md`)
+- **Anyware**: `0.0.6` (`docs/anyware/anyware_plan.md`)
 
 ## Tech Stack
 - **Language**: Python 3.12+ (tested with 3.13)
@@ -73,6 +73,16 @@ Anyware text + button/label integration:
 python3 integration_test/v0.4.0/test_anyware_text.py
 ```
 
+GUI focus navigation scoring:
+```bash
+python3 integration_test/v0.4.0/test_gui_focus.py
+```
+
+Anyware PageStack lifecycle:
+```bash
+python3 integration_test/v0.4.0/test_anyware_page_stack.py
+```
+
 ## Fonts
 Default ASCII font is now **DEM-MOMono-300.otf**. CJK font is **wqy-zenhei.ttc**. Both live under:
 - `assets/fonts/DEM-MO typeface/Mono/`
@@ -108,8 +118,9 @@ Key constraints:
 
 ## Documentation Map
 - `docs/GUI_TUTORIAL.md` — usage tutorial and grid/pixel rules
-- `docs/GUI_FRAMEWORK.md` — architecture/roadmap notes
-- `docs/anyware/anyware_plan.md` — Anyware roadmap + version
+- `docs/GUI_FRAMEWORK.md` — GUI planning notes
+- `docs/DEV_GUIDE.md` — secondary development reference
+- `docs/anyware/anyware_plan.md` — Anyware planning notes + version
 - `docs/AI_ASSISTED_DESIGN_GUIDE.md` — AI workflow + live reload rule
 
 ## Deployment

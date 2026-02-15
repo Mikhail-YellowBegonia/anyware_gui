@@ -16,6 +16,10 @@ class Page(ComponentGroup):
     def on_exit(self, ctx) -> None:
         return None
 
+    def set_components(self, ctx, components, *, ensure_focus: bool = True) -> None:
+        """Reconcile the page's components (dynamic add/remove/replace)."""
+        self.reconcile_children(ctx, components, ensure_focus=ensure_focus)
+
 
 class PageStack:
     """Browser-like page stack with push/pop/replace."""

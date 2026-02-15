@@ -31,6 +31,10 @@ Minimum conventions (Anyware integration prep):
 - **必须启用 reload 机制**，允许实时更新布局参数并即时反馈。
   - 目标体验：接近 `html + live server` 的实时调参。
   - 允许热更新失败时回退到上一次有效配置，并在屏幕提示错误。
+- 标准模板 `apps/app_anyware_template.py` 已默认集成热重载（配套 `apps/anyware_template_layout.py`）。
+- 调参期可启用“布局模式”（两色强制），减少颜色噪音：
+  - API：`GUI.set_layout_mode(True/False)`
+  - 模板：在 `apps/anyware_template_layout.py` 设置 `LAYOUT_MODE = True/False` 并热重载切换。
 
 > 该要求用于削弱“AI 输出逻辑正确但排版瑕疵”的长期成本，让调参回路变成实时反馈。
 
@@ -49,7 +53,7 @@ Prompt guidance for AI-generated templates:
 - 形状/框体/节点矩形必须使用 **像素坐标**（由 `gx()/gy()` 转换）。
 - 如果绘制 API 返回像素坐标，且需要对齐文本，必须通过 `px()/py()` 转回网格再绘制文本。
 
-## AI 编码清单（从 docs/anyware/ai_coding_tips.md 汇总）
+## AI 编码清单
 Checklist (Instruments)
 - Normalize numeric values to `[0, 1]` before rendering.
 - Keep text APIs in grid units; shape APIs in pixel units.
@@ -61,6 +65,15 @@ Checklist (Buttons + Status)
 - Use `pressable=False` for non-interactive indicators.
 - Use `focusable=False` if the indicator should not capture focus.
 - Prefer `status_color_map` for stable state visuals.
+- Button text alignment and manual line breaks:
+  - `label_align_h`, `label_align_v`, `label_line_step`, `label_orientation`.
+  - Use `\\n` for explicit line breaks (no auto-wrap).
+
+Checklist (SegmentDisplay sizing)
+- Use a consistent baseline for all displays in the page.
+- Default is `digit_w_px=14`, `digit_h_px=24`, `spacing_px=3`.
+- Scale width/height/spacing together to preserve proportions.
+- Provide `off_color` to keep inactive segments readable but subdued.
 
 Demo Page Notes
 - Add one minimal example per component.
