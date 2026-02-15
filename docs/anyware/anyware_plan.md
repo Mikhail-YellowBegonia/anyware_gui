@@ -199,44 +199,8 @@ Minimum conventions:
 - conservative defaults for AI template generation
 - explicit scope integration hooks (optional, but consistent)
 
-## 6) Milestones (0.0.1 -> 0.1.0)
-M1. Baseline freeze (done in 0.0.1):
-- architecture boundary confirmed
-- component universe and gap map written
-
-M2. GUI prerequisite patch:
-- evaluate and implement `draw_*_progress` and/or `measure_text` if accepted
-- update docs and one demo
-Exit criteria:
-- at least one progress draw primitive available
-- one boot-style reveal demo proves non-loop timeline feasibility
-
-M3. Anyware component implementation:
-- implement MVP components with shared style/default model
-- provide one medium-complexity page demo
-Exit criteria:
-- `IntroSequence` one-shot flow usable with component states
-- animation can end in stable interactive page state
-
-M4. Workflow validation:
-- run target workflow:
-  - hand-drawn layout -> natural language + rough coordinates -> AI first-pass -> limited rework -> human tuning -> verification
-Exit criteria:
-- AI output is logically correct before manual polish
-- manual work is primarily spacing/style tuning, not behavior rewrite
-
-## 7) Acceptance Criteria for Anyware 0.1.0
-Must satisfy all:
-1. A medium UI page can be assembled with fewer lines than raw GUI script.
-2. AI-generated template is logically correct on first pass:
-- coordinate type mostly correct
-- navigation and state transitions correct
-3. Remaining work is mainly human tuning/polish, not logic rewrite.
-4. Documentation clearly explains:
-- raw GUI path
-- Anyware path
-- grid/pixel conversion rules
-- demo archive usage (`demo_archive.md`)
+## 6) Roadmap (Canonical)
+Milestones and acceptance criteria are consolidated in `docs/ROADMAP.md` to avoid duplication across docs.
 
 ## 8) Change Log
 - 2026-02-13: Merged `StatusLight` into `Button` (non-pressable status button + optional lighting), implemented P0/P0.5 instruments, added per-component docs, and wired them into the demo page.

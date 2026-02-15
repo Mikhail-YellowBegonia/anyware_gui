@@ -1,4 +1,12 @@
+import sys
+from pathlib import Path
+
 import pygame
+
+ROOT = Path(__file__).resolve().parents[2]
+APPS_DIR = ROOT / "apps"
+if str(APPS_DIR) not in sys.path:
+    sys.path.insert(0, str(APPS_DIR))
 
 from _bootstrap import FONTS_DIR, ensure_repo_root_on_path
 
@@ -10,8 +18,8 @@ from core.anyware import AnywareApp, Button, Label, Page, SegmentDisplay
 _COLOR = "White"
 
 # --- Manual layout constants (grid units) ---
-GRID_COLS = 60
-GRID_ROWS = 50
+GRID_COLS = 54
+GRID_ROWS = 38
 
 PANEL_W = 55
 PANEL_H = 39
