@@ -307,7 +307,7 @@ class DialGauge(Component):
 
 
 class SegmentDisplay(Component):
-    """Multi-segment digital tube display (7-seg default)."""
+    """Multi-segment digital tube display (7-seg only)."""
 
     _DEFAULT_SEGMENT_POLYS_NORM = {
         # Normalized polygons in 0..1 box (digit_w_px x digit_h_px).
@@ -320,6 +320,29 @@ class SegmentDisplay(Component):
         "G": [(0.22, 0.46), (0.78, 0.46), (0.70, 0.54), (0.30, 0.54)],
         "DP": [(1.02, 0.88), (1.14, 0.88), (1.14, 1.00), (1.02, 1.00)],
     }
+    _UNSET = object()
+    DEFAULTS = {
+        "digit_w_px": 14.0,
+        "digit_h_px": 24.0,
+        "spacing_px": 3.0,
+        "on_color": "CRT_Cyan",
+        "off_color": None,
+        "segment_style": "classic",
+        "segment_thickness": 0.16,
+        "segment_margin": 0.10,
+        "segment_polys": {},
+    }
+
+    @classmethod
+    def set_defaults(cls, **kwargs) -> None:
+        for key, value in kwargs.items():
+            if key not in cls.DEFAULTS:
+                raise KeyError(f"Unknown SegmentDisplay default: {key}")
+            cls.DEFAULTS[key] = value
+
+    @classmethod
+    def get_defaults(cls) -> dict:
+        return dict(cls.DEFAULTS)
 
     def __init__(
         self,
@@ -331,27 +354,43 @@ class SegmentDisplay(Component):
         digits: int = 0,
         align: str = "right",
         pad_char: str = " ",
-        digit_w_px: float = 14.0,
-        digit_h_px: float = 24.0,
-        spacing_px: float = 3.0,
-        on_color: str = "CRT_Cyan",
-        off_color: str | None = None,
-        segment_polys: dict | None = None,
+        digit_w_px: float | object = _UNSET,
+        digit_h_px: float | object = _UNSET,
+        spacing_px: float | object = _UNSET,
+        on_color: str | object = _UNSET,
+        off_color: str | None | object = _UNSET,
+        segment_style: str | object = _UNSET,
+        segment_thickness: float | object = _UNSET,
+        segment_margin: float | object = _UNSET,
+        segment_polys: dict | None | object = _UNSET,
         visible: bool = True,
         enabled: bool = True,
     ):
         super().__init__(component_id=display_id, visible=visible, enabled=enabled)
+        defaults = self.DEFAULTS
         self.gx = float(gx)
         self.gy = float(gy)
         self.text = text
         self.digits = max(0, int(digits))
         self.align = str(align).lower()
         self.pad_char = str(pad_char) if pad_char else " "
+        digit_w_px = defaults["digit_w_px"] if digit_w_px is self._UNSET else digit_w_px
+        digit_h_px = defaults["digit_h_px"] if digit_h_px is self._UNSET else digit_h_px
+        spacing_px = defaults["spacing_px"] if spacing_px is self._UNSET else spacing_px
+        on_color = defaults["on_color"] if on_color is self._UNSET else on_color
+        off_color = defaults["off_color"] if off_color is self._UNSET else off_color
+        segment_style = defaults["segment_style"] if segment_style is self._UNSET else segment_style
+        segment_thickness = defaults["segment_thickness"] if segment_thickness is self._UNSET else segment_thickness
+        segment_margin = defaults["segment_margin"] if segment_margin is self._UNSET else segment_margin
+        segment_polys = defaults["segment_polys"] if segment_polys is self._UNSET else segment_polys
         self.digit_w_px = float(digit_w_px)
         self.digit_h_px = float(digit_h_px)
         self.spacing_px = float(spacing_px)
         self.on_color = on_color
         self.off_color = off_color
+        self.segment_style = str(segment_style).lower() if segment_style else "classic"
+        self.segment_thickness = float(segment_thickness)
+        self.segment_margin = float(segment_margin)
         self.segment_polys = dict(segment_polys or {})
 
     def _resolve_text(self, ctx) -> str:
@@ -399,8 +438,38 @@ class SegmentDisplay(Component):
         pad = [{"char": self.pad_char, "dp": False}] * pad_count
         return pad + digits if self.align == "right" else digits + pad
 
+    def _rect_segment_polys_norm(self):
+        t = max(0.04, min(0.40, self.segment_thickness))
+        m = max(0.0, min(0.30, self.segment_margin))
+        y_mid = 0.5
+        split_gap = max(0.02, m * 0.5)
+
+        def rect(x1, y1, x2, y2):
+            return [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
+
+        top_end = max(0.0, y_mid - split_gap)
+        bot_start = min(1.0, y_mid + split_gap)
+        return {
+            "A": rect(m, 0.0, 1.0 - m, t),
+            "D": rect(m, 1.0 - t, 1.0 - m, 1.0),
+            "G": rect(m, y_mid - t / 2.0, 1.0 - m, y_mid + t / 2.0),
+            "F": rect(0.0, m, t, top_end),
+            "E": rect(0.0, bot_start, t, 1.0 - m),
+            "B": rect(1.0 - t, m, 1.0, top_end),
+            "C": rect(1.0 - t, bot_start, 1.0, 1.0 - m),
+            "DP": list(self._DEFAULT_SEGMENT_POLYS_NORM["DP"]),
+        }
+
+    def _segment_style_polys_norm(self):
+        style = self.segment_style or "classic"
+        if style in ("classic", "default", "trapezoid"):
+            return dict(self._DEFAULT_SEGMENT_POLYS_NORM)
+        if style in ("rect", "rectangle"):
+            return self._rect_segment_polys_norm()
+        return dict(self._DEFAULT_SEGMENT_POLYS_NORM)
+
     def _resolve_segment_polys(self):
-        source = dict(self._DEFAULT_SEGMENT_POLYS_NORM)
+        source = self._segment_style_polys_norm()
         if self.segment_polys:
             source.update(self.segment_polys)
         polys = {}

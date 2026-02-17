@@ -62,12 +62,39 @@ Quick mapping:
 5. `pygame.display.flip()` (in app loop)
 6. `clock.tick(target_fps)` (in app loop)
 
+## Output Separation (Pre-Adaptation)
+Goal: keep Anyware apps output-agnostic so mixed-pipeline (GUI -> image/texture -> OpenGL) can be added without breaking apps.
+
+Rules:
+- Anyware apps must not call `pygame.display.*` or `GUI.draw_to_surface(...)`.
+- Apps should only render through `AnywareContext` (or `GUI` APIs if using raw path).
+- Screen presentation is handled by the runner/presenter layer (pygame path today, OpenGL path later).
+
+Note:
+- The frame flow above is the **pygame presenter** path. Mixed-pipeline will replace steps 5-6 at the presenter layer, not in app code.
+
+Anyware runtime placeholders (no behavior change yet):
+- `AnywareApp(output_mode="pygame")` defaults to direct pygame presentation.
+- `output_mode != "pygame"` enables offscreen rendering (pre-adaptation hook).
+- `logic_fps` / `present_fps` are reserved for decoupling logic vs presentation rates.
+- `frame_exporter(surface, ctx)` is an optional hook called after each logic frame.
+
+Recommended usage (pre-adaptation only):
+- Keep `output_mode="pygame"` for normal runs.
+- Use `frame_exporter` for diagnostics or to bridge into external presenters.
+
 ## Layout Mode (Palette Override)
 - API: `GUI.set_layout_mode(True)` / `GUI.set_layout_mode(False)`
 - Behavior:
   - background forced to `(200, 190, 180)`
   - all other colors forced to `(130, 159, 23)`
 - Anyware template: toggle `LAYOUT_MODE` in `apps/anyware_template_layout.py` and it will hot-reload.
+
+## SegmentDisplay Defaults (Anyware)
+- Global defaults live on `SegmentDisplay.DEFAULTS`.
+- Override with `SegmentDisplay.set_defaults(...)` (e.g. sizing, spacing, colors).
+- Supported `segment_style`: `classic` (default), `rect`.
+- 7-seg only (DP supported). 16-seg is deferred.
 
 ## GUI API Summary
 Engine contract and versioning:

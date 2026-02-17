@@ -10,9 +10,9 @@ Doc role: planning/architecture (tutorial is `../GUI_TUTORIAL.md`, reference is 
 - ANY-TEMPLATE-RELOAD: Anyware template supports hot reload for layout params. Status: Done (2026-02-15)
 - ANY-BUTTON-ALIGN: Button label alignment + multiline support. Status: Done (2026-02-15)
 - ANY-DYNAMIC-COMPONENTS: flat reconcile-based dynamic component management. Status: Done (2026-02-15)
-- ANY-SEGMENT-DEFAULTS: SegmentDisplay global defaults (size, spacing, colors). Status: Pending
-- ANY-SEGMENT-THEME: SegmentDisplay global theme or shared style defaults. Status: Pending
-- ANY-CHECKBOX-MENU: implement `CheckboxMenu` (MVP component). Status: Pending
+- ANY-SEGMENT-DEFAULTS: SegmentDisplay global defaults (size, spacing, colors). Status: Done (2026-02-16)
+- ANY-SEGMENT-THEME: SegmentDisplay global theme or shared style defaults. Status: Done (2026-02-16)
+- ANY-CHECKBOX-MENU: implement `CheckboxMenu` (MVP component). Status: Done (2026-02-16)
 
 ## 1) Positioning
 - Anyware is a high-level component layer above `core/GUI.py`.
@@ -230,6 +230,15 @@ Implementation contract:
 - Use `visible/enabled` for per-frame animation-like changes; avoid per-frame structural reconcile.
 - Id helper: use `stable_component_id(name, seed=...)` or `IdFactory.next(name)` to create stable, unique ids.
 
+## 5.4 Open Questions (Post-0.1.0)
+Dynamic content model / bindings:
+- Do we standardize `Bindable[T] = T | Callable[[ctx], T]` for common props (text/color/visible/enabled)?
+- Or move toward a DOM-like tree with reconcile (higher effort, different authoring model)?
+
+Live reload scope:
+- Keep hot reload limited to layout params (current), or
+- Allow full page module reload + UI tree rebuild?
+
 ## 6) Milestones and Acceptance (0.1.0)
 M1. Baseline freeze (done in 0.0.1):
 - architecture boundary confirmed
@@ -255,9 +264,22 @@ Acceptance criteria (must satisfy all):
 - grid/pixel conversion rules
 - demo archive usage (`demo_archive.md`)
 
+## 6.1) Pre-Adaptation Plan (v0.0.6 → v0.1.0)
+Goal: focus on pre-adaptation for the mixed pipeline (GUI -> image/texture -> OpenGL output) while improving robustness and keeping the pygame path as default.
+
+1. v0.0.6 (baseline hardening): tighten Anyware app discipline (no direct screen output); document render/output separation; confirm all demos run under the pygame presenter path.
+2. v0.0.7 (contract draft): introduce a presenter/output contract in docs; add config placeholders for `output_mode`, `logic_fps`, and `present_fps` without behavior change. Status: Done (2026-02-16).
+3. v0.0.8 (pre-adaptation hooks): add offscreen render target plumbing and optional “frame export” hooks; keep CI on pygame path; add guardrails against direct `pygame.display` usage in Anyware apps. Status: Done (2026-02-16).
+4. v0.0.9 (integration test): run integration tests focused on AI-assisted UI second-pass development; evaluate AI coding friendliness and collaboration workflow; verify pre-adaptation constraints are respected.
+   - Approach: different from v0.0.4; to be discussed and documented before execution.
+   - Focus topics: AI prompt/brief quality, layout tuning loop, error recovery, and human-AI handoff.
+   - Constraints: keep pygame presenter path for tests; validate no direct screen output in Anyware apps.
+5. v0.1.0 (freeze pre-adaptation): finalize the output separation contract and presenter interface in docs; keep OpenGL path optional and off by default; record acceptance results.
+
 ## 7) Change Log
 - 2026-02-13: Merged `StatusLight` into `Button` (non-pressable status button + optional lighting), implemented P0/P0.5 instruments, added per-component docs, and wired them into the demo page.
 - 2026-02-13: Added `PageRouter` for FSM-style page switching and documented page logic constraints.
+- 2026-02-16: Archived DSKY integration artifacts; SegmentDisplay defaults verified manually; CheckboxMenu shipped in demo.
 
 ## 8) Version Changelog (Anyware)
 - 0.0.4 (2026-02-13):

@@ -3,7 +3,7 @@ from .context import AnywareContext, FrameInfo
 from .page import Page, PageRouter, PageStack
 from .runtime import AnywareApp
 from .text import Label, Text
-from .widgets import Button, ButtonArray
+from .widgets import Button, ButtonArray, CheckboxMenu
 from .instruments import DialGauge, MeterBar, SegmentDisplay, ValueText
 from .id import IdFactory, stable_component_id
 
@@ -20,6 +20,7 @@ __all__ = (
     "Text",
     "Button",
     "ButtonArray",
+    "CheckboxMenu",
     "ValueText",
     "MeterBar",
     "DialGauge",

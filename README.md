@@ -13,6 +13,19 @@ Grid-based text UI engine with a lightweight component layer (Anyware) for assem
 - **GUI Engine**: `0.4.0` (`core/GUI.py`)
 - **Anyware**: `0.0.6` (`docs/anyware/anyware_plan.md`)
 
+## Anyware Overview
+Anyware is the high-level component layer on top of `core/GUI.py`, designed to assemble cockpit-style UIs faster while preserving strict grid/pixel discipline. It provides reusable widgets, page composition, and predictable focus/interaction behavior.
+
+Current scope (v0.0.6):
+- MVP components: `Label`, `Button`, `ButtonArray`, `CheckboxMenu`, `ValueText`, `MeterBar`, `DialGauge`, `SegmentDisplay`.
+- Page management: `Page`, `PageStack`, `PageRouter` for multi-page flows.
+- Dynamic component management via flat reconcile (`ComponentGroup.reconcile_children`).
+- AI-assisted workflow: grid-first layout, live reload for parameter tuning, minimal logic rewrite during polish.
+
+Pre-adaptation status:
+- Output separation rules are in place so apps remain output-agnostic.
+- Placeholders exist for future mixed pipeline output (`output_mode`, `logic_fps`, `present_fps`, `frame_exporter`).
+
 ## Tech Stack
 - **Language**: Python 3.12+ (tested with 3.13)
 - **Rendering**: pygame + pygame.freetype

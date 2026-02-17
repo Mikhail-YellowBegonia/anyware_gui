@@ -1,6 +1,6 @@
 # Anyware Demo Archive
 
-Last Updated: 2026-02-15
+Last Updated: 2026-02-16
 
 Purpose:
 - Keep a temporary, runnable showcase of current Anyware capabilities.
@@ -16,6 +16,7 @@ Current demo entries:
 - Combined demo archive page.
 - Includes multi-page push/pop via PageStack.
 - Includes dynamic component reconciliation page (press `D`).
+- Includes `CheckboxMenu` multi-state toggle.
 
 Archived scratch apps:
 - `apps/archive/app_anyware_dynamic_temp.py` (single-page dynamic reconcile check)

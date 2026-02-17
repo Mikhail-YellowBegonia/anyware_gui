@@ -10,6 +10,7 @@ from core.anyware import (
     AnywareApp,
     Button,
     ButtonArray,
+    CheckboxMenu,
     DialGauge,
     Label,
     MeterBar,
@@ -104,6 +105,18 @@ class DemoArchivePage(Page):
                 off_color="CRT_BlueDark",
             )
         )
+        self.mode_menu = CheckboxMenu(
+            "mode_menu",
+            "CTRL",
+            states=["手动", "自动", "锁定"],
+            gx=4,
+            gy=20,
+            width_px=120,
+            height_px=20,
+            scope="main",
+            on_change=self._on_mode_change,
+        )
+        self.add(self.mode_menu)
 
         self.buttons = ButtonArray(
             "archive_buttons",
@@ -127,6 +140,9 @@ class DemoArchivePage(Page):
 
     def _on_select(self, button, ctx) -> None:
         self.selected = button.label
+    
+    def _on_mode_change(self, menu, ctx) -> None:
+        self.selected = f"{menu.base_label}:{menu.get_value()}"
 
     def _status(self) -> str:
         if self.value < 40:

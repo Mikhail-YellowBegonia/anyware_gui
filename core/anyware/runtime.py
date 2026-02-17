@@ -19,6 +19,10 @@ class AnywareApp:
         clear_color="Black",
         display_defaults: dict | None = None,
         allow_raw_gui: bool = False,
+        output_mode: str = "pygame",
+        logic_fps: float | None = None,
+        present_fps: float | None = None,
+        frame_exporter=None,
         min_gui_api_level: int = 1,
         quit_on_escape: bool = True,
     ):
@@ -31,16 +35,32 @@ class AnywareApp:
         self.page_stack = PageStack()
         self.page_registry: dict[str, Page] = {}
 
-        self.screen_surf = pygame.display.set_mode(GUI.get_window_size_px(), GUI.get_window_flags())
-        pygame.display.set_caption(title)
-        if GUI.window_always_on_top:
-            GUI._set_window_always_on_top(True)
+        # Pre-adaptation output config placeholders (no behavior change yet).
+        self.output_mode = str(output_mode)
+        self.logic_fps = None if logic_fps is None else float(logic_fps)
+        self.present_fps = None if present_fps is None else float(present_fps)
+        self.frame_exporter = frame_exporter
+        self._present_to_screen = self.output_mode == "pygame"
+        self._use_offscreen = (self.output_mode != "pygame") or (self.frame_exporter is not None)
+        self._display_warning_emitted = False
+
+        self._init_render_surfaces(title=title)
 
         self.clear_color = clear_color
         self.quit_on_escape = bool(quit_on_escape)
         self.clock = pygame.time.Clock()
         self.running = False
         self._last_logic_time = time.time()
+
+    def _init_render_surfaces(self, *, title: str | None = None) -> None:
+        self.screen_surf = pygame.display.set_mode(GUI.get_window_size_px(), GUI.get_window_flags())
+        if title is not None:
+            pygame.display.set_caption(title)
+        if GUI.window_always_on_top:
+            GUI._set_window_always_on_top(True)
+        self._display_surface_id = id(self.screen_surf)
+        self.offscreen_surf = pygame.Surface(GUI.get_window_size_px()) if self._use_offscreen else None
+        self._render_surf = self.offscreen_surf if self.offscreen_surf is not None else self.screen_surf
 
     def set_fonts(self, *, ascii_path=None, cjk_path=None, cell_w=None, cell_h=None, size_px=None):
         GUI.set_fonts(
@@ -50,7 +70,7 @@ class AnywareApp:
             cell_h=cell_h,
             size_px=size_px,
         )
-        self.screen_surf = pygame.display.set_mode(GUI.get_window_size_px(), GUI.get_window_flags())
+        self._init_render_surfaces()
         return self
 
     def set_root_page(self, page: Page):
@@ -87,6 +107,19 @@ class AnywareApp:
             return True
         return self.page_stack.handle_event(event, self.ctx)
 
+    def _warn_if_display_replaced(self) -> None:
+        if not self._present_to_screen:
+            return
+        current = pygame.display.get_surface()
+        if current is None:
+            return
+        if current is not self.screen_surf and not self._display_warning_emitted:
+            print(
+                "AnywareApp warning: display surface replaced outside AnywareApp. "
+                "Avoid calling pygame.display.set_mode() in Anyware apps."
+            )
+            self._display_warning_emitted = True
+
     def run(self):
         self.running = True
         self._last_logic_time = time.time()
@@ -97,6 +130,7 @@ class AnywareApp:
             now = time.time()
             logic_interval = 1.0 / max(1, GUI.fps)
             if now - self._last_logic_time >= logic_interval:
+                self._warn_if_display_replaced()
                 dt = now - self._last_logic_time
                 frame = self.runtime.begin_frame(clear_color=self.clear_color)
                 self.ctx.set_frame_info(frame=frame, dt=dt)
@@ -104,10 +138,15 @@ class AnywareApp:
                 self.page_stack.update(self.ctx, dt)
                 self.page_stack.render(self.ctx)
 
-                self.runtime.finish_frame(self.screen_surf)
+                self.runtime.finish_frame(self._render_surf)
+                if self.frame_exporter is not None:
+                    self.frame_exporter(self._render_surf, self.ctx)
+                if self._present_to_screen and self.offscreen_surf is not None:
+                    self.screen_surf.blit(self.offscreen_surf, (0, 0))
                 self._last_logic_time = now
 
-            pygame.display.flip()
+            if self._present_to_screen:
+                pygame.display.flip()
             self.clock.tick(max(1, GUI.target_fps))
 
         self.page_stack.clear(self.ctx)

@@ -177,6 +177,96 @@ class Button(Component):
             )
 
 
+class CheckboxMenu(Button):
+    """Single item, multi-state toggle (label + state)."""
+
+    def __init__(
+        self,
+        menu_id: str,
+        label: str,
+        *,
+        states: list[str],
+        index: int = 0,
+        label_sep: str = ": ",
+        gx: float,
+        gy: float,
+        width_px: float = 96,
+        height_px: float = 20,
+        scope: str = "main",
+        color: str = "CRT_Cyan",
+        nav: dict | None = None,
+        on_change: Callable[["CheckboxMenu", object], None] | None = None,
+        pressable: bool = True,
+        focusable: bool = True,
+        label_align_h: str = "left",
+        label_align_v: str = "top",
+        label_line_step: int = 1,
+        label_orientation: str = "horizontal",
+        label_padding_gx: int = 1,
+        label_padding_gy: int = 1,
+    ):
+        self.base_label = str(label)
+        self.states = [str(state) for state in states]
+        self.label_sep = str(label_sep)
+        self.index = max(0, int(index))
+        self.on_change = on_change
+        super().__init__(
+            menu_id,
+            "",
+            gx=gx,
+            gy=gy,
+            width_px=width_px,
+            height_px=height_px,
+            scope=scope,
+            color=color,
+            nav=nav,
+            on_select=None,
+            pressable=pressable,
+            focusable=focusable,
+            label_align_h=label_align_h,
+            label_align_v=label_align_v,
+            label_line_step=label_line_step,
+            label_orientation=label_orientation,
+            label_padding_gx=label_padding_gx,
+            label_padding_gy=label_padding_gy,
+        )
+        self._sync_label()
+
+    def _sync_label(self) -> None:
+        state = self.get_value()
+        if state:
+            self.label = f"{self.base_label}{self.label_sep}{state}"
+        else:
+            self.label = self.base_label
+
+    def get_value(self) -> str:
+        if not self.states:
+            return ""
+        idx = self.index % len(self.states)
+        return self.states[idx]
+
+    def set_index(self, index: int) -> None:
+        self.index = max(0, int(index))
+        self._sync_label()
+
+    def handle_event(self, event, ctx) -> bool:
+        if not self.enabled or not self.visible or not self.pressable:
+            return False
+        if event.type != pygame.KEYDOWN:
+            return False
+        if event.key not in (pygame.K_RETURN, pygame.K_SPACE):
+            return False
+        if ctx.get_focus(None) != self.button_id:
+            return False
+        if not self.states:
+            return False
+        self.index = (self.index + 1) % len(self.states)
+        self._sync_label()
+        if self.on_change is not None:
+            self.on_change(self, ctx)
+        return True
+
+
 class ButtonArray(ComponentGroup):
     """Grid button collection with deterministic local nav links."""
 
