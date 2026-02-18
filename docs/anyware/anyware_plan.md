@@ -280,6 +280,7 @@ Goal: focus on pre-adaptation for the mixed pipeline (GUI -> image/texture -> Op
 - 2026-02-13: Merged `StatusLight` into `Button` (non-pressable status button + optional lighting), implemented P0/P0.5 instruments, added per-component docs, and wired them into the demo page.
 - 2026-02-13: Added `PageRouter` for FSM-style page switching and documented page logic constraints.
 - 2026-02-16: Archived DSKY integration artifacts; SegmentDisplay defaults verified manually; CheckboxMenu shipped in demo.
+- 2026-02-18: Anyware `Button` label rendering switched to grid-aligned super-text overlay to avoid fill-layer occlusion while keeping text alignment consistent.
 
 ## 8) Version Changelog (Anyware)
 - 0.0.4 (2026-02-13):

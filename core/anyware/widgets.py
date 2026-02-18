@@ -153,7 +153,25 @@ class Button(Component):
         inner_gy = gy + self.label_padding_gy
         inner_gw = gw - (self.label_padding_gx * 2)
         inner_gh = gh - (self.label_padding_gy * 2)
-        if inner_gw > 0 and inner_gh > 0:
+        cell_w_px = ctx.gx(1) - ctx.gx(0)
+        cell_h_px = ctx.gy(1) - ctx.gy(0)
+        inner_x_px = ctx.gx(inner_gx)
+        inner_y_px = ctx.gy(inner_gy)
+        inner_w_px = inner_gw * cell_w_px
+        inner_h_px = inner_gh * cell_h_px
+        if inner_gw > 0 and inner_gh > 0 and self.label_orientation != "vertical":
+            ctx.draw_super_text_px(
+                inner_x_px,
+                inner_y_px,
+                border_color,
+                self.label,
+                align_h=self.label_align_h,
+                align_v=self.label_align_v,
+                box_w_px=inner_w_px,
+                box_h_px=inner_h_px,
+                line_step=self.label_line_step,
+            )
+        elif inner_gw > 0 and inner_gh > 0:
             ctx.draw_text_box(
                 inner_gx,
                 inner_gy,

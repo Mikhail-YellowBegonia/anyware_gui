@@ -60,12 +60,6 @@ def _install_palette(layout_module) -> None:
     _register_palette_color("Solar_Default", default_hex, index=240)
     _register_palette_color("Solar_Special", special_hex, index=241)
 
-    blink18_idx = GUI.pal("blink18")
-    if isinstance(blink18_idx, int):
-        r, g, b = _hex_to_rgb(special_hex)
-        h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
-        GUI.hsv_palette[blink18_idx] = (h, s, v, "blink18")
-
     GUI.refresh_palette_cache()
     GUI.set_layout_mode(False)
     GUI.set_display_defaults(window_bg_color_rgb=_hex_to_rgb(bg_hex))
@@ -144,6 +138,7 @@ class ReactorPage(Page):
         buttons = list(getattr(layout, "NAV_BUTTONS", []))
         comps = []
         color = getattr(layout, "DEFAULT_COLOR", "Solar_Default")
+        active_color = getattr(layout, "SPECIAL_COLOR", "Solar_Special")
         for btn in buttons:
             bid = str(btn.get("id"))
             label = btn.get("label") or bid
@@ -167,12 +162,19 @@ class ReactorPage(Page):
                     label_align_h="center",
                     label_align_v="center",
                     label_line_step=1,
-                    on_select=lambda _b, _ctx, target=target: self._on_nav_select(target),
+                    status=lambda _b, _ctx, target=target, page_id=self.page_id: (
+                        "active" if target == page_id else None
+                    ),
+                    status_color_map={"active": active_color},
+                    status_default_color=None,
+                    on_select=lambda _b, _ctx, target=target: self._on_nav_select(target, _b),
                 )
             )
         return comps
 
-    def _on_nav_select(self, target: str | None) -> None:
+    def _on_nav_select(self, target: str | None, button) -> None:
+        if button is not None:
+            button.selected = False
         if not target or target == self.page_id:
             return
         self.app.switch_page(target)
@@ -185,13 +187,104 @@ class ReactorPage(Page):
         return (x1, y1, x2 - x1, y2 - y1)
 
     def _render_layout_error(self, ctx, message: str):
-        ctx.draw_text_box(2, 56, 156, 3, "Solar_Default", message, align_h="left", align_v="top", line_step=1)
+        ctx.draw_text_box(2, 45, 124, 3, "Solar_Default", message, align_h="left", align_v="top", line_step=1)
 
     def render(self, ctx) -> None:
         layout = self.layout.module
         if layout is None:
             self._render_layout_error(ctx, self.layout.error or "Layout missing")
             return
+
+        nav_area = getattr(layout, "NAV_AREA", None)
+        if nav_area:
+            x, y, w, h = self._grid_rect_px(ctx, nav_area["gx"], nav_area["gy"], nav_area["gw"], nav_area["gh"])
+            ctx.draw_rect(
+                nav_area.get("color", "Solar_Default"),
+                x,
+                y,
+                w,
+                h,
+                filled=nav_area.get("filled", False),
+                thickness=nav_area.get("thickness", 1),
+            )
+
+        footer_area = getattr(layout, "FOOTER_AREA", None)
+        if footer_area:
+            x, y, w, h = self._grid_rect_px(ctx, footer_area["gx"], footer_area["gy"], footer_area["gw"], footer_area["gh"])
+            ctx.draw_rect(
+                footer_area.get("color", "Solar_Default"),
+                x,
+                y,
+                w,
+                h,
+                filled=footer_area.get("filled", False),
+                thickness=footer_area.get("thickness", 1),
+            )
+
+        logo = getattr(layout, "LOGO_POLY", None)
+        if logo:
+            x = ctx.gx(logo.get("gx", 0))
+            y = ctx.gy(logo.get("gy", 0))
+            ctx.draw_poly(
+                logo.get("vertices_px", []),
+                logo.get("color", "Solar_Default"),
+                x,
+                y,
+                filled=logo.get("filled", False),
+                thickness=logo.get("thickness", 1),
+            )
+
+        net_box = getattr(layout, "NET_INDICATOR", None)
+        if net_box:
+            x, y, w, h = self._grid_rect_px(ctx, net_box["gx"], net_box["gy"], net_box["gw"], net_box["gh"])
+            ctx.draw_rect(
+                net_box.get("color", "Solar_Default"),
+                x,
+                y,
+                w,
+                h,
+                filled=net_box.get("filled", False),
+                thickness=net_box.get("thickness", 1),
+            )
+
+        comms = getattr(layout, "COMMS_INDICATOR", None)
+        if comms:
+            x, y, w, h = self._grid_rect_px(ctx, comms["gx"], comms["gy"], comms["gw"], comms["gh"])
+            ctx.draw_rect(
+                comms.get("color", "Solar_Special"),
+                x,
+                y,
+                w,
+                h,
+                filled=True,
+                thickness=1,
+            )
+
+        net_info = getattr(layout, "NET_INFO_BOX", None)
+        if net_info:
+            x, y, w, h = self._grid_rect_px(ctx, net_info["gx"], net_info["gy"], net_info["gw"], net_info["gh"])
+            ctx.draw_rect(
+                net_info.get("color", "Solar_Default"),
+                x,
+                y,
+                w,
+                h,
+                filled=False,
+                thickness=1,
+            )
+            lines = list(net_info.get("text_lines", []))
+            if lines:
+                ctx.draw_text_box(
+                    net_info["gx"] + 1,
+                    net_info["gy"],
+                    max(1, net_info["gw"] - 2),
+                    net_info["gh"],
+                    net_info.get("color", "Solar_Default"),
+                    "\n".join(lines),
+                    align_h="left",
+                    align_v="center",
+                    line_step=1,
+            )
 
         panels = getattr(layout, "PANELS", {})
         panel = panels.get(self.page_id)
@@ -207,7 +300,48 @@ class ReactorPage(Page):
                 thickness=panel.get("thickness", 1),
             )
 
+        footer_blocks = getattr(layout, "FOOTER_BLOCKS", [])
+        for block in footer_blocks:
+            x, y, w, h = self._grid_rect_px(ctx, block["gx"], block["gy"], block["gw"], block["gh"])
+            ctx.draw_rect(
+                block.get("color", "Solar_Default"),
+                x,
+                y,
+                w,
+                h,
+                filled=True,
+                thickness=1,
+            )
+
+        footer_texts = getattr(layout, "FOOTER_TEXTS", [])
+        for text in footer_texts:
+            ctx.draw_text_box(
+                text["gx"],
+                text["gy"],
+                text["gw"],
+                text["gh"],
+                text.get("color", "Solar_Default"),
+                text.get("text", ""),
+                align_h=text.get("align_h", "left"),
+                align_v=text.get("align_v", "center"),
+                line_step=text.get("line_step", 1),
+            )
+
         super().render(ctx)
+
+        if comms:
+            x, y, w, h = self._grid_rect_px(ctx, comms["gx"], comms["gy"], comms["gw"], comms["gh"])
+            ctx.draw_super_text_px(
+                x,
+                y,
+                getattr(layout, "DEFAULT_COLOR", "Solar_Default"),
+                comms.get("text", "COMMS"),
+                align_h="center",
+                align_v="center",
+                box_w_px=w,
+                box_h_px=h,
+                line_step=1,
+            )
 
         if self.layout.error:
             self._render_layout_error(ctx, self.layout.error)
@@ -224,8 +358,8 @@ class ReactorApp:
             display_defaults={
                 "fps": 16,
                 "target_fps": 60,
-                "rows": 60,
-                "cols": 160,
+                "rows": 48,
+                "cols": 128,
                 "window_noframe": False,
                 "window_always_on_top": False,
             },

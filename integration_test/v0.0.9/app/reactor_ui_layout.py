@@ -10,6 +10,98 @@ FOCUS_SCOPE = "nav"
 DEFAULT_COLOR = "Solar_Default"
 SPECIAL_COLOR = "Solar_Special"
 
+NAV_AREA = {
+    "gx": 0,
+    "gy": 0,
+    "gw": 128,
+    "gh": 4,
+    "color": DEFAULT_COLOR,
+    "thickness": 1,
+}
+
+BODY_AREA = {
+    "gx": 0,
+    "gy": 4,
+    "gw": 128,
+    "gh": 40,
+    "color": DEFAULT_COLOR,
+    "thickness": 2,
+}
+
+FOOTER_AREA = {
+    "gx": 0,
+    "gy": 45,
+    "gw": 128,
+    "gh": 3,
+    "color": DEFAULT_COLOR,
+    "thickness": 1,
+}
+
+NAV_RIGHT_AREA = {
+    "gx": 86,
+    "gy": 0,
+    "gw": 40,
+    "gh": 2,
+}
+
+LOGO_POLY = {
+    "gx": 88,
+    "gy": 0,
+    "color": DEFAULT_COLOR,
+    "thickness": 1,
+    "vertices_px": [
+        (0, 0),
+        (56, 0),
+        (64, 10),
+        (8, 10),
+    ],
+}
+
+NET_INDICATOR = {
+    "gx": 97,
+    "gy": 1,
+    "gw": 30,
+    "gh": 2,
+    "color": DEFAULT_COLOR,
+    "thickness": 2,
+}
+
+COMMS_INDICATOR = {
+    "gx": 97,
+    "gy": 2,
+    "gw": 10,
+    "gh": 1,
+    "color": SPECIAL_COLOR,
+    "text": "COMMS",
+}
+
+NET_INFO_BOX = {
+    "gx": 107,
+    "gy": 1,
+    "gw": 20,
+    "gh": 2,
+    "color": DEFAULT_COLOR,
+    "text_lines": [
+        "PORT 8787",
+        "LATENCY --ms",
+    ],
+}
+
+PAGE_LABELS = {
+    "status": "状态指示",
+    "diagram": "形式图",
+    "control": "控制面板",
+    "core": "堆芯",
+}
+
+PAGE_TITLE = {
+    "gx": 2,
+    "gy": 3,
+    "gw": 24,
+    "gh": 1,
+    "color": DEFAULT_COLOR,
+}
+
 NAV_BUTTONS = [
     {
         "id": "nav_status",
@@ -17,7 +109,7 @@ NAV_BUTTONS = [
         "target": "status",
         "gx": 2,
         "gy": 1,
-        "gw": 18,
+        "gw": 15,
         "gh": 2,
         "nav": {"right": "nav_diagram"},
     },
@@ -25,9 +117,9 @@ NAV_BUTTONS = [
         "id": "nav_diagram",
         "label": "形式图",
         "target": "diagram",
-        "gx": 22,
+        "gx": 18,
         "gy": 1,
-        "gw": 18,
+        "gw": 15,
         "gh": 2,
         "nav": {"left": "nav_status", "right": "nav_control"},
     },
@@ -35,9 +127,9 @@ NAV_BUTTONS = [
         "id": "nav_control",
         "label": "控制面板",
         "target": "control",
-        "gx": 42,
+        "gx": 34,
         "gy": 1,
-        "gw": 18,
+        "gw": 15,
         "gh": 2,
         "nav": {"left": "nav_diagram", "right": "nav_core"},
     },
@@ -45,19 +137,19 @@ NAV_BUTTONS = [
         "id": "nav_core",
         "label": "堆芯",
         "target": "core",
-        "gx": 62,
+        "gx": 50,
         "gy": 1,
-        "gw": 18,
+        "gw": 15,
         "gh": 2,
         "nav": {"left": "nav_control"},
     },
 ]
 
 PANEL_DEFAULT = {
-    "gx": 2,
+    "gx": 0,
     "gy": 4,
-    "gw": 156,
-    "gh": 54,
+    "gw": 128,
+    "gh": 41,
     "color": DEFAULT_COLOR,
     "thickness": 2,
 }
@@ -68,3 +160,14 @@ PANELS = {
     "control": dict(PANEL_DEFAULT),
     "core": dict(PANEL_DEFAULT),
 }
+
+FOOTER_BLOCKS = [
+    {"gx": 2, "gy": 46, "gw": 12, "gh": 1, "color": DEFAULT_COLOR},
+    {"gx": 16, "gy": 46, "gw": 12, "gh": 1, "color": SPECIAL_COLOR},
+    {"gx": 120, "gy": 46, "gw": 6, "gh": 1, "color": DEFAULT_COLOR},
+]
+
+FOOTER_TEXTS = [
+    {"gx": 30, "gy": 46, "gw": 20, "gh": 1, "color": SPECIAL_COLOR, "text": "五月雨计划"},
+    {"gx": 103, "gy": 46, "gw": 20, "gh": 1, "color": DEFAULT_COLOR, "text": "Project Samidare"},
+]
