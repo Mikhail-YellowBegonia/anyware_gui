@@ -4,6 +4,8 @@ from typing import Callable
 
 import pygame
 
+from core import GUI
+
 from .component import Component, ComponentGroup
 
 
@@ -159,11 +161,16 @@ class Button(Component):
         inner_y_px = ctx.gy(inner_gy)
         inner_w_px = inner_gw * cell_w_px
         inner_h_px = inner_gh * cell_h_px
+        label_color = border_color
+        if status_color is not None:
+            r, g, b = GUI.get_color_rgb(status_color)
+            luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0
+            label_color = "Black" if luminance > 0.6 else "White"
         if inner_gw > 0 and inner_gh > 0 and self.label_orientation != "vertical":
             ctx.draw_super_text_px(
                 inner_x_px,
                 inner_y_px,
-                border_color,
+                label_color,
                 self.label,
                 align_h=self.label_align_h,
                 align_v=self.label_align_v,
@@ -177,7 +184,7 @@ class Button(Component):
                 inner_gy,
                 inner_gw,
                 inner_gh,
-                border_color,
+                label_color,
                 self.label,
                 align_h=self.label_align_h,
                 align_v=self.label_align_v,
@@ -188,7 +195,7 @@ class Button(Component):
             ctx.label(
                 gx,
                 gy,
-                border_color,
+                label_color,
                 self.label,
                 orientation=self.label_orientation,
                 line_step=self.label_line_step,

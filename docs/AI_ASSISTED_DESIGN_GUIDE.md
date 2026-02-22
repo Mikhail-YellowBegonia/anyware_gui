@@ -27,14 +27,15 @@ Minimum conventions (Anyware integration prep):
 - explicit scope integration hooks (optional, but consistent)
 
 ## 新增固定要求（AI辅助设计的强制约束）
-- **关键排版参数必须硬编码成显式数据结构**（例如 `layout.py` / `layout.json`）。
+- **关键排版参数必须硬编码成显式数据结构**（默认使用 `layout.yaml`）。
+- **布局标准为 YAML DSL**；仅在 DSL 无法表达时使用 Python 自定义渲染。
 - **必须启用 reload 机制**，允许实时更新布局参数并即时反馈。
   - 目标体验：接近 `html + live server` 的实时调参。
   - 允许热更新失败时回退到上一次有效配置，并在屏幕提示错误。
-- 标准模板 `apps/app_anyware_template.py` 已默认集成热重载（配套 `apps/anyware_template_layout.py`）。
+- 标准模板 `apps/app_anyware_template.py` 已默认集成热重载（配套 `apps/layouts/anyware_template_layout.yaml`）。
 - 调参期可启用“布局模式”（两色强制），减少颜色噪音：
   - API：`GUI.set_layout_mode(True/False)`
-  - 模板：在 `apps/anyware_template_layout.py` 设置 `LAYOUT_MODE = True/False` 并热重载切换。
+  - 模板：在 `apps/layouts/anyware_template_layout.yaml` 设置 `globals.layout_mode` 并热重载切换。
 
 > 该要求用于削弱“AI 输出逻辑正确但排版瑕疵”的长期成本，让调参回路变成实时反馈。
 
@@ -78,6 +79,7 @@ Checklist (SegmentDisplay sizing)
 Demo Page Notes
 - Add one minimal example per component.
 - Avoid complex animation during integration tests.
+  - Note: v0.0.9 integration tests are currently paused until the YAML Layout DSL is complete.
 
 ## 推荐工作流（AI -> 人类调参）
 Recommended workflow:
@@ -90,20 +92,27 @@ Recommended workflow:
 ## Live Reload 结构建议（参考用）
 建议将布局参数抽成显式文件，并由运行时监视更新：
 
-- 布局参数文件：`apps/<name>_layout.py`
+- 布局参数文件：`apps/<name>_layout.yaml`
 - 运行时逻辑：
   - 记录 `mtime`，每帧或每 N 帧检查更新
-  - 发生变更后 `importlib.reload`
+  - 发生变更后重新解析 YAML
   - 出错则保留上次版本并在 UI 提示
 
 示例结构（示意）：
-```python
-TEXT_BOXES = [
-    {"gx": 2, "gy": 2, "gw": 22, "gh": 3, "text": "CENTER\nBOX", "align_h": "center", "align_v": "center"},
-]
-SUPER_TEXT = [
-    {"gx": 2, "gy": 13, "text": "SUPER x2", "scale": 2},
-]
+```yaml
+pages:
+  demo:
+    elements:
+      - type: text
+        rect: [2, 2, 22, 3]
+        text: "CENTER\nBOX"
+        align_h: center
+        align_v: center
+      - type: super_text
+        gx: 2
+        gy: 13
+        text: "SUPER x2"
+        scale: 2
 ```
 
 ## 接受标准（来自 Anyware 规划）

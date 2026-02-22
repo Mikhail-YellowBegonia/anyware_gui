@@ -30,6 +30,7 @@ class AnywareApp:
         if display_defaults:
             GUI.set_display_defaults(**display_defaults)
 
+        self._title = str(title)
         self.runtime = GUI.create_runtime(min_api_level=min_gui_api_level)
         self.ctx = AnywareContext(self.runtime, allow_raw_gui=allow_raw_gui)
         self.page_stack = PageStack()
@@ -54,13 +55,30 @@ class AnywareApp:
 
     def _init_render_surfaces(self, *, title: str | None = None) -> None:
         self.screen_surf = pygame.display.set_mode(GUI.get_window_size_px(), GUI.get_window_flags())
-        if title is not None:
-            pygame.display.set_caption(title)
+        use_title = self._title if title is None else title
+        if use_title is not None:
+            pygame.display.set_caption(use_title)
         if GUI.window_always_on_top:
             GUI._set_window_always_on_top(True)
         self._display_surface_id = id(self.screen_surf)
         self.offscreen_surf = pygame.Surface(GUI.get_window_size_px()) if self._use_offscreen else None
         self._render_surf = self.offscreen_surf if self.offscreen_surf is not None else self.screen_surf
+
+    def _refresh_display_surface_if_needed(self) -> None:
+        if not self._present_to_screen:
+            return
+        current = pygame.display.get_surface()
+        if current is None:
+            self._init_render_surfaces()
+            return
+        if current is not self.screen_surf:
+            self.screen_surf = current
+        if self._use_offscreen:
+            if self.offscreen_surf is None or self.offscreen_surf.get_size() != current.get_size():
+                self.offscreen_surf = pygame.Surface(current.get_size())
+            self._render_surf = self.offscreen_surf
+        else:
+            self._render_surf = self.screen_surf
 
     def set_fonts(self, *, ascii_path=None, cjk_path=None, cell_w=None, cell_h=None, size_px=None):
         GUI.set_fonts(
@@ -130,6 +148,7 @@ class AnywareApp:
             now = time.time()
             logic_interval = 1.0 / max(1, GUI.fps)
             if now - self._last_logic_time >= logic_interval:
+                self._refresh_display_surface_if_needed()
                 self._warn_if_display_replaced()
                 dt = now - self._last_logic_time
                 frame = self.runtime.begin_frame(clear_color=self.clear_color)
@@ -138,7 +157,13 @@ class AnywareApp:
                 self.page_stack.update(self.ctx, dt)
                 self.page_stack.render(self.ctx)
 
-                self.runtime.finish_frame(self._render_surf)
+                try:
+                    self.runtime.finish_frame(self._render_surf)
+                except pygame.error as exc:
+                    if "Unsupported surface format" in str(exc):
+                        self._init_render_surfaces()
+                        continue
+                    raise
                 if self.frame_exporter is not None:
                     self.frame_exporter(self._render_surf, self.ctx)
                 if self._present_to_screen and self.offscreen_surf is not None:

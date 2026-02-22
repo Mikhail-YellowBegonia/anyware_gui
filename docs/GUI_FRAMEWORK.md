@@ -2,9 +2,10 @@
 
 Version: 0.4.0
 Last Updated: 2026-02-15
-Doc role: planning and roadmap detail for the GUI engine. Developer reference is in `DEV_GUIDE.md`.
+Doc role: core planning and roadmap detail for the GUI engine. Developer reference is in `DEV_GUIDE.md`.
 
 ## 0) Documentation Split
+- Core docs: `GUI_FRAMEWORK.md`, `docs/anyware/anyware_plan.md`
 - Planning: `GUI_FRAMEWORK.md`, `docs/anyware/anyware_plan.md`
 - Secondary dev reference: `DEV_GUIDE.md`
 - Overview tutorial: `GUI_TUTORIAL.md`

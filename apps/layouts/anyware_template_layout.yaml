@@ -1,0 +1,56 @@
+globals:
+  layout_mode: true
+  focus_scope: main
+
+pages:
+  home:
+    elements:
+      - id: frame_box
+        type: box
+        rect: [0, 0, 60, 30]
+        color: CRT_Cyan
+        thickness: 2
+
+      - id: title
+        type: text
+        rect: [2, 1, 56, 1]
+        text: "ANYWARE TEMPLATE"
+        align_h: left
+        align_v: top
+
+      - id: hint
+        type: text
+        rect: [2, 2, 56, 1]
+        text: "ARROWS: focus  ENTER/SPACE: toggle  ESC: quit"
+        align_h: left
+        align_v: top
+
+      - id: frame
+        type: text
+        rect: [2, 4, 56, 1]
+        bind: frame
+        align_h: left
+        align_v: top
+
+      - id: selected
+        type: text
+        rect: [2, 5, 56, 1]
+        bind: selected
+        align_h: left
+        align_v: top
+
+      - id: demo_btn_1
+        type: button
+        rect: [4, 8, 12, 2]
+        label: "BTN 1"
+        nav:
+          right: demo_btn_2
+        on_click: select_button
+
+      - id: demo_btn_2
+        type: button
+        rect: [19, 8, 12, 2]
+        label: "BTN 2"
+        nav:
+          left: demo_btn_1
+        on_click: select_button

@@ -107,40 +107,40 @@ NAV_BUTTONS = [
         "id": "nav_status",
         "label": "状态指示",
         "target": "status",
-        "gx": 2,
-        "gy": 1,
-        "gw": 15,
-        "gh": 2,
+        "gx": 1.8,
+        "gy": 0.8,
+        "gw": 15.4,
+        "gh": 2.4,
         "nav": {"right": "nav_diagram"},
     },
     {
         "id": "nav_diagram",
         "label": "形式图",
         "target": "diagram",
-        "gx": 18,
-        "gy": 1,
-        "gw": 15,
-        "gh": 2,
+        "gx": 17.8,
+        "gy": 0.8,
+        "gw": 15.4,
+        "gh": 2.4,
         "nav": {"left": "nav_status", "right": "nav_control"},
     },
     {
         "id": "nav_control",
         "label": "控制面板",
         "target": "control",
-        "gx": 34,
-        "gy": 1,
-        "gw": 15,
-        "gh": 2,
+        "gx": 33.8,
+        "gy": 0.8,
+        "gw": 15.4,
+        "gh": 2.4,
         "nav": {"left": "nav_diagram", "right": "nav_core"},
     },
     {
         "id": "nav_core",
         "label": "堆芯",
         "target": "core",
-        "gx": 50,
-        "gy": 1,
-        "gw": 15,
-        "gh": 2,
+        "gx": 49.8,
+        "gy": 0.8,
+        "gw": 15.4,
+        "gh": 2.4,
         "nav": {"left": "nav_control"},
     },
 ]
@@ -159,6 +159,40 @@ PANELS = {
     "diagram": dict(PANEL_DEFAULT),
     "control": dict(PANEL_DEFAULT),
     "core": dict(PANEL_DEFAULT),
+}
+
+DIAGRAM_BOXES = [
+    {"id": "core", "label": "Core", "gx": 104, "gy": 16, "gw": 18, "gh": 14},
+    {"id": "steam", "label": "Steam Generator", "gx": 76, "gy": 16, "gw": 18, "gh": 14},
+    {"id": "turbine_high", "label": "High Turbine", "gx": 48, "gy": 16, "gw": 18, "gh": 6},
+    {"id": "turbine_low", "label": "Low Turbine", "gx": 48, "gy": 24, "gw": 18, "gh": 6},
+    {"id": "electrics", "label": "Electrics", "gx": 6, "gy": 16, "gw": 32, "gh": 6},
+    {"id": "condenser", "label": "Condenser", "gx": 6, "gy": 24, "gw": 32, "gh": 6},
+]
+
+DIAGRAM_BOX_STYLE = {
+    "color": DEFAULT_COLOR,
+    "thickness": 1,
+    "label_color": DEFAULT_COLOR,
+    "label_align_h": "center",
+    "label_align_v": "center",
+}
+
+DIAGRAM_ARROWS = [
+    {"start_gx": 104, "start_gy": 19, "end_gx": 94, "end_gy": 19}, # Core to Steam Generator (coolant outflow)
+    {"start_gx": 94 , "start_gy": 27, "end_gx": 104, "end_gy": 27}, # Steam Generator to Core (coolant inflow)
+    {"start_gx": 76, "start_gy": 19, "end_gx": 66, "end_gy": 19}, # Steam Generator to High Turbine (steam outflow)
+    {"start_gx": 57, "start_gy": 22, "end_gx": 57, "end_gy": 24}, # High Turbine to Low Turbine
+    {"start_gx": 38, "start_gy": 27, "end_gx": 76, "end_gy": 27}, # Condenser to Turbine (Coldwater feedback)
+    {"start_gx": 48, "start_gy": 19, "end_gx": 38, "end_gy": 19}, # High Turbine to Electrics (power output)
+    {"start_gx": 48, "start_gy": 26, "end_gx": 38, "end_gy": 26}, # Steam Generator to Condenser (Hotwater outflow)
+]
+
+DIAGRAM_ARROW_STYLE = {
+    "color": DEFAULT_COLOR,
+    "thickness": 1.0,
+    "head_len_px": 10,
+    "head_w_px": 6,
 }
 
 FOOTER_BLOCKS = [

@@ -5,7 +5,7 @@ Purpose: provide a deterministic, API-driven backend for the UI integration test
 ## Run
 
 ```bash
-python3 integration_test/v0.0.9/reactor_backend.py --scenario cold_start
+python3 integration_test/archive/v0.0.9/reactor_backend.py --scenario cold_start
 ```
 
 Default address: `http://127.0.0.1:8787`
@@ -67,6 +67,6 @@ curl -s -X POST http://127.0.0.1:8787/sim \
 
 ## Files
 
-- `integration_test/v0.0.9/reactor_sim.py` – simulation core
-- `integration_test/v0.0.9/reactor_backend.py` – API server
-- `integration_test/v0.0.9/README.md` – this file
+- `integration_test/archive/v0.0.9/reactor_sim.py` – simulation core
+- `integration_test/archive/v0.0.9/reactor_backend.py` – API server
+- `integration_test/archive/v0.0.9/README.md` – this file

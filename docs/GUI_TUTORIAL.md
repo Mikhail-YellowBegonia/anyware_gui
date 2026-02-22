@@ -139,9 +139,10 @@ GUI.draw_focus_blockers("blink10", scope="main", thickness=1)
 1. Read `apps/app_template.py` for minimal structure.
 2. Read `apps/app_example.py` for API surface.
 3. Read `apps/app_gauges_example.py` for advanced composition (scope/blocker/checklist).
-4. Read `apps/app_anyware_template.py` for Anyware template + hot reload layout params.
-5. Read `apps/app_anyware_demo.py` for the combined demo archive (multi-page via PageStack).
-6. Then decide:
+4. Read `apps/app_anyware_template.py` + `apps/layouts/anyware_template_layout.yaml` for Anyware + DSL hot reload.
+5. Read `apps/app_anyware_text_layout_demo.py` + `apps/layouts/text_layout_demo_layout.yaml` for DSL + custom overlays.
+6. (Optional) Read `apps/app_anyware_demo.py` for a complex Python-driven demo archive.
+7. Then decide:
 - stay raw `core/GUI.py` for precise control, or
 - move to Anyware components for faster assembly.
 

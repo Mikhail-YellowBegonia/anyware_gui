@@ -1138,6 +1138,9 @@ def reset_overlays():
 
 def draw_to_surface(surface):
     surface.fill(_LAYOUT_MODE_BG_RGB if _LAYOUT_MODE_ENABLED else window_bg_color_rgb)
+    for item in fillpoly_queue:
+        v, c = item
+        pygame.draw.polygon(surface, get_color_rgb(c), v)
     cols, rows = row_column_resolution
     ch_h, ch_w = char_resolution
     eff_w = (ch_w + char_block_spacing_px) * PIXEL_SCALE
@@ -1163,9 +1166,6 @@ def draw_to_surface(surface):
                     continue
                 for px in lit_px:
                     surface.fill(rgb, (x_pos + px * PIXEL_SCALE, y_pos + py * PIXEL_SCALE, PIXEL_SCALE, PIXEL_SCALE))
-    for item in fillpoly_queue:
-        v, c = item
-        pygame.draw.polygon(surface, get_color_rgb(c), v)
     for item in line_queue:
         x1, y1, x2, y2, c, t = item
         thickness = max(1, int(round(float(t) * PIXEL_SCALE)))

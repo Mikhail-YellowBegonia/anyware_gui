@@ -189,6 +189,73 @@ class ReactorPage(Page):
     def _render_layout_error(self, ctx, message: str):
         ctx.draw_text_box(2, 45, 124, 3, "Solar_Default", message, align_h="left", align_v="top", line_step=1)
 
+    def _draw_arrow(self, ctx, start_px, end_px, *, color, thickness, head_len, head_w) -> None:
+        sx, sy = start_px
+        ex, ey = end_px
+        dx = ex - sx
+        dy = ey - sy
+        length = (dx * dx + dy * dy) ** 0.5
+        if length <= 0.01:
+            return
+        ux = dx / length
+        uy = dy / length
+        px = -uy
+        py = ux
+        base_x = ex - ux * head_len
+        base_y = ey - uy * head_len
+        left_x = base_x + px * head_w
+        left_y = base_y + py * head_w
+        right_x = base_x - px * head_w
+        right_y = base_y - py * head_w
+
+        ctx.draw_poly([(0.0, 0.0), (dx, dy)], color, sx, sy, filled=False, thickness=thickness)
+        ctx.draw_poly(
+            [(ex, ey), (left_x, left_y), (right_x, right_y)],
+            color,
+            0.0,
+            0.0,
+            filled=True,
+            thickness=1,
+        )
+
+    def _render_diagram(self, ctx, layout) -> None:
+        boxes = getattr(layout, "DIAGRAM_BOXES", [])
+        if not boxes:
+            return
+        style = getattr(layout, "DIAGRAM_BOX_STYLE", {})
+        box_color = style.get("color", getattr(layout, "DEFAULT_COLOR", "Solar_Default"))
+        label_color = style.get("label_color", box_color)
+        align_h = style.get("label_align_h", "center")
+        align_v = style.get("label_align_v", "center")
+        thickness = style.get("thickness", 1)
+        for box in boxes:
+            x, y, w, h = self._grid_rect_px(ctx, box["gx"], box["gy"], box["gw"], box["gh"])
+            ctx.draw_rect(box_color, x, y, w, h, filled=False, thickness=thickness)
+            ctx.draw_text_box(
+                box["gx"],
+                box["gy"],
+                box["gw"],
+                box["gh"],
+                label_color,
+                box.get("label", box.get("id", "")),
+                align_h=align_h,
+                align_v=align_v,
+                line_step=1,
+            )
+
+        arrows = getattr(layout, "DIAGRAM_ARROWS", [])
+        if not arrows:
+            return
+        arrow_style = getattr(layout, "DIAGRAM_ARROW_STYLE", {})
+        color = arrow_style.get("color", box_color)
+        thickness = float(arrow_style.get("thickness", 1.0))
+        head_len = float(arrow_style.get("head_len_px", 10))
+        head_w = float(arrow_style.get("head_w_px", 6))
+        for arrow in arrows:
+            start_px = (ctx.gx(arrow["start_gx"]), ctx.gy(arrow["start_gy"]))
+            end_px = (ctx.gx(arrow["end_gx"]), ctx.gy(arrow["end_gy"]))
+            self._draw_arrow(ctx, start_px, end_px, color=color, thickness=thickness, head_len=head_len, head_w=head_w)
+
     def render(self, ctx) -> None:
         layout = self.layout.module
         if layout is None:
@@ -300,6 +367,9 @@ class ReactorPage(Page):
                 thickness=panel.get("thickness", 1),
             )
 
+        if self.page_id == "diagram":
+            self._render_diagram(ctx, layout)
+
         footer_blocks = getattr(layout, "FOOTER_BLOCKS", [])
         for block in footer_blocks:
             x, y, w, h = self._grid_rect_px(ctx, block["gx"], block["gy"], block["gw"], block["gh"])
@@ -366,8 +436,8 @@ class ReactorApp:
             allow_raw_gui=False,
         )
 
-        font_ascii = FONTS_DIR / "DEM-MO typeface" / "Mono" / "DEM-MOMono-300.otf"
-        font_cjk = FONTS_DIR / "wqy-zenhei" / "wqy-zenhei.ttc"
+        font_ascii = FONTS_DIR / "DEM-MO typeface" / "Mono" / "DEM-MOMono-400.otf"
+        font_cjk = FONTS_DIR / "长坂点宋16" / "长坂点宋16.ttf"
         self.app.set_fonts(ascii_path=str(font_ascii), cjk_path=str(font_cjk), cell_w=8, cell_h=16, size_px=16)
 
         pages = [

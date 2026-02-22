@@ -2,9 +2,10 @@
 
 Version: 0.4.0
 Last Updated: 2026-02-15
-Doc role: detailed secondary development reference. Planning lives in `GUI_FRAMEWORK.md` and `docs/anyware/anyware_plan.md`.
+Doc role: detailed secondary development reference. Core planning lives in `GUI_FRAMEWORK.md` and `docs/anyware/anyware_plan.md`.
 
 ## Document Map
+- Core docs: `GUI_FRAMEWORK.md`, `docs/anyware/anyware_plan.md`
 - Planning: `GUI_FRAMEWORK.md`, `docs/anyware/anyware_plan.md`
 - Overview tutorial: `GUI_TUTORIAL.md`
 - AI coding: `AI_ASSISTED_DESIGN_GUIDE.md`
@@ -88,7 +89,12 @@ Recommended usage (pre-adaptation only):
 - Behavior:
   - background forced to `(200, 190, 180)`
   - all other colors forced to `(130, 159, 23)`
-- Anyware template: toggle `LAYOUT_MODE` in `apps/anyware_template_layout.py` and it will hot-reload.
+- Anyware template: toggle `globals.layout_mode` in `apps/layouts/anyware_template_layout.yaml` and it will hot-reload.
+
+## Layout DSL (Default)
+- YAML DSL is the standard layout format for Anyware apps.
+- Use `LayoutReloader` + `LayoutPage` for most pages.
+- Python layout modules are reserved for complex custom rendering only.
 
 ## SegmentDisplay Defaults (Anyware)
 - Global defaults live on `SegmentDisplay.DEFAULTS`.

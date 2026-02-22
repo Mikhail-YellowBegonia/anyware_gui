@@ -22,6 +22,12 @@ Current scope (v0.0.6):
 - Dynamic component management via flat reconcile (`ComponentGroup.reconcile_children`).
 - AI-assisted workflow: grid-first layout, live reload for parameter tuning, minimal logic rewrite during polish.
 
+## Layout DSL (YAML)
+Layout is now standardized on YAML DSL files. Python layout modules are reserved for complex custom rendering only.
+Default path for Anyware apps:
+- Use `layout.yaml` + `LayoutPage`/`LayoutReloader`.
+- Keep Python layout only when the DSL cannot express the behavior (e.g., custom draw loops or bespoke effects).
+
 Pre-adaptation status:
 - Output separation rules are in place so apps remain output-agnostic.
 - Placeholders exist for future mixed pipeline output (`output_mode`, `logic_fps`, `present_fps`, `frame_exporter`).
@@ -46,7 +52,7 @@ Pre-adaptation status:
 
 ## Install Dependencies
 ```bash
-pip install pygame numpy
+pip install pygame numpy pyyaml
 ```
 
 ## Quick Start
@@ -70,7 +76,7 @@ python3 apps/app_anyware_text_layout_demo.py
 
 Edit layout parameters while it runs:
 ```bash
-apps/text_layout_demo_layout.py
+apps/layouts/text_layout_demo_layout.yaml
 ```
 
 ## Integration Tests
@@ -130,6 +136,7 @@ Key constraints:
 - Keep focus and select states separate (focus is GUI-level, select is app-level).
 
 ## Documentation Map
+- Core docs: `docs/GUI_FRAMEWORK.md`, `docs/anyware/anyware_plan.md`
 - `docs/GUI_TUTORIAL.md` — usage tutorial and grid/pixel rules
 - `docs/GUI_FRAMEWORK.md` — GUI planning notes
 - `docs/DEV_GUIDE.md` — secondary development reference
