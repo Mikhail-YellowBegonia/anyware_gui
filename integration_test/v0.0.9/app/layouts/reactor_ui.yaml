@@ -1,0 +1,679 @@
+globals:
+  layout_mode: false
+  focus_scope: nav
+  palette:
+    bg_hex: "#fdf6f0"
+    default_hex: "#586e75"
+    special_hex: "#78cd26"
+
+styles:
+  default:
+    color: Solar_Default
+    text_color: Solar_Default
+    line_color: Solar_Default
+    thickness: 1
+  panel:
+    color: Solar_Default
+    line_color: Solar_Default
+    thickness: 2
+  nav_button:
+    color: Solar_Default
+    label_align_h: center
+    label_align_v: center
+    label_line_step: 1
+  nav_button_active:
+    color: Solar_Special
+    label_align_h: center
+    label_align_v: center
+    label_line_step: 1
+  footer_block:
+    color: Solar_Default
+    filled: true
+  footer_block_active:
+    color: Solar_Special
+    filled: true
+  comms:
+    color: Solar_Special
+    filled: true
+
+pages:
+  status:
+    focus_scope: nav
+    groups:
+      - id: nav
+        rect: [0, 0, 128, 4]
+        elements:
+          - id: nav_frame
+            type: rect
+            rect: [0, 0, 128, 4]
+            style: default
+            thickness: 1
+          - id: nav_status
+            type: button
+            rect: [1.8, 0.8, 15.4, 2.4]
+            label: "状态指示"
+            style: nav_button_active
+            scope: nav
+            nav: { right: nav_diagram }
+            on_click: go_page.status
+          - id: nav_diagram
+            type: button
+            rect: [17.8, 0.8, 15.4, 2.4]
+            label: "形式图"
+            style: nav_button
+            scope: nav
+            nav: { left: nav_status, right: nav_control }
+            on_click: go_page.diagram
+          - id: nav_control
+            type: button
+            rect: [33.8, 0.8, 15.4, 2.4]
+            label: "控制面板"
+            style: nav_button
+            scope: nav
+            nav: { left: nav_diagram, right: nav_core }
+            on_click: go_page.control
+          - id: nav_core
+            type: button
+            rect: [49.8, 0.8, 15.4, 2.4]
+            label: "堆芯"
+            style: nav_button
+            scope: nav
+            nav: { left: nav_control }
+            on_click: go_page.core
+          - id: logo_poly
+            type: poly
+            gx: 88
+            gy: 0
+            vertices_px:
+              - [0, 0]
+              - [56, 0]
+              - [64, 10]
+              - [8, 10]
+            style: default
+            thickness: 1
+          - id: net_indicator
+            type: rect
+            rect: [97, 1, 30, 2]
+            style: default
+            thickness: 2
+          - id: comms_indicator
+            type: rect
+            rect: [97, 2, 10, 1]
+            style: comms
+          - id: comms_text
+            type: text
+            rect: [97, 2, 10, 1]
+            text: "COMMS"
+            align_h: center
+            align_v: center
+          - id: net_info_box
+            type: rect
+            rect: [107, 1, 20, 2]
+            style: default
+          - id: net_info_text
+            type: text
+            rect: [108, 1, 18, 2]
+            text: "PORT 8787\nLATENCY --ms"
+            align_h: left
+            align_v: center
+            line_step: 1
+      - id: body
+        rect: [0, 4, 128, 41]
+        elements:
+          - id: panel_frame
+            type: rect
+            rect: [0, 0, 128, 41]
+            style: panel
+          - id: status_placeholder
+            type: text
+            rect: [4, 4, 32, 2]
+            text: "STATUS PAGE (TODO)"
+            align_h: left
+            align_v: center
+      - id: footer
+        rect: [0, 45, 128, 3]
+        elements:
+          - id: footer_frame
+            type: rect
+            rect: [0, 0, 128, 3]
+            style: default
+            z_index: 0
+          - id: footer_block_1
+            type: rect
+            rect: [2, 1, 12, 1]
+            style: footer_block
+            z_index: 1
+          - id: footer_block_2
+            type: rect
+            rect: [16, 1, 12, 1]
+            style: footer_block_active
+            z_index: 1
+          - id: footer_block_3
+            type: rect
+            rect: [120, 1, 6, 1]
+            style: footer_block
+            z_index: 1
+          - id: footer_text_1
+            type: text
+            rect: [30, 1, 20, 1]
+            text: "五月雨计划"
+            text_color: Solar_Special
+            align_h: left
+            align_v: center
+            z_index: 2
+          - id: footer_text_2
+            type: text
+            rect: [103, 1, 20, 1]
+            text: "Project Samidare"
+            text_color: Solar_Default
+            align_h: left
+            align_v: center
+            z_index: 2
+
+  diagram:
+    focus_scope: nav
+    groups:
+      - id: nav
+        rect: [0, 0, 128, 4]
+        elements:
+          - id: nav_frame
+            type: rect
+            rect: [0, 0, 128, 4]
+            style: default
+            thickness: 1
+            z_index: 0
+          - id: nav_status
+            type: button
+            rect: [1.8, 0.8, 15.4, 2.4]
+            label: "状态指示"
+            style: nav_button
+            scope: nav
+            nav: { right: nav_diagram }
+            on_click: go_page.status
+            z_index: 1
+          - id: nav_diagram
+            type: button
+            rect: [17.8, 0.8, 15.4, 2.4]
+            label: "形式图"
+            style: nav_button_active
+            scope: nav
+            nav: { left: nav_status, right: nav_control }
+            on_click: go_page.diagram
+            z_index: 1
+          - id: nav_control
+            type: button
+            rect: [33.8, 0.8, 15.4, 2.4]
+            label: "控制面板"
+            style: nav_button
+            scope: nav
+            nav: { left: nav_diagram, right: nav_core }
+            on_click: go_page.control
+            z_index: 1
+          - id: nav_core
+            type: button
+            rect: [49.8, 0.8, 15.4, 2.4]
+            label: "堆芯"
+            style: nav_button
+            scope: nav
+            nav: { left: nav_control }
+            on_click: go_page.core
+            z_index: 1
+          - id: logo_poly
+            type: poly
+            gx: 88
+            gy: 0
+            vertices_px:
+              - [0, 0]
+              - [56, 0]
+              - [64, 10]
+              - [8, 10]
+            style: default
+            thickness: 1
+            z_index: 1
+          - id: net_indicator
+            type: rect
+            rect: [97, 1, 30, 2]
+            style: default
+            thickness: 2
+            z_index: 1
+          - id: comms_indicator
+            type: rect
+            rect: [97, 2, 10, 1]
+            style: comms
+            z_index: 1
+          - id: comms_text
+            type: text
+            rect: [97, 2, 10, 1]
+            text: "COMMS"
+            align_h: center
+            align_v: center
+            z_index: 2
+          - id: net_info_box
+            type: rect
+            rect: [107, 1, 20, 2]
+            style: default
+            z_index: 1
+          - id: net_info_text
+            type: text
+            rect: [108, 1, 18, 2]
+            text: "PORT 8787\nLATENCY --ms"
+            align_h: left
+            align_v: center
+            line_step: 1
+            z_index: 2
+      - id: body
+        rect: [0, 4, 128, 41]
+        elements:
+          - id: panel_frame
+            type: rect
+            rect: [0, 0, 128, 41]
+            style: panel
+            z_index: 0
+          - id: diagram_arrow_1
+            type: arrow
+            start_gx: 104
+            start_gy: 19
+            end_gx: 94
+            end_gy: 19
+            z_index: 1
+          - id: diagram_arrow_2
+            type: arrow
+            start_gx: 94
+            start_gy: 27
+            end_gx: 104
+            end_gy: 27
+            z_index: 1
+          - id: diagram_arrow_3
+            type: arrow
+            start_gx: 76
+            start_gy: 19
+            end_gx: 66
+            end_gy: 19
+            z_index: 1
+          - id: diagram_arrow_4
+            type: arrow
+            start_gx: 57
+            start_gy: 22
+            end_gx: 57
+            end_gy: 24
+            z_index: 1
+          - id: diagram_arrow_5
+            type: arrow
+            start_gx: 38
+            start_gy: 27
+            end_gx: 76
+            end_gy: 27
+            z_index: 1
+          - id: diagram_arrow_6
+            type: arrow
+            start_gx: 48
+            start_gy: 19
+            end_gx: 38
+            end_gy: 19
+            z_index: 1
+          - id: diagram_arrow_7
+            type: arrow
+            start_gx: 48
+            start_gy: 26
+            end_gx: 38
+            end_gy: 26
+            z_index: 1
+          - id: diagram_box_core
+            type: rect
+            rect: [104, 16, 18, 14]
+            style: default
+            z_index: 2
+          - id: diagram_box_steam
+            type: rect
+            rect: [76, 16, 18, 14]
+            style: default
+            z_index: 2
+          - id: diagram_box_turbine_high
+            type: rect
+            rect: [48, 16, 18, 6]
+            style: default
+            z_index: 2
+          - id: diagram_box_turbine_low
+            type: rect
+            rect: [48, 24, 18, 6]
+            style: default
+            z_index: 2
+          - id: diagram_box_electrics
+            type: rect
+            rect: [6, 16, 32, 6]
+            style: default
+            z_index: 2
+          - id: diagram_box_condenser
+            type: rect
+            rect: [6, 24, 32, 6]
+            style: default
+            z_index: 2
+          - id: diagram_label_core
+            type: text
+            rect: [104, 16, 18, 14]
+            text: "Core"
+            align_h: center
+            align_v: center
+            z_index: 3
+          - id: diagram_label_steam
+            type: text
+            rect: [76, 16, 18, 14]
+            text: "Steam Generator"
+            align_h: center
+            align_v: center
+            z_index: 3
+          - id: diagram_label_turbine_high
+            type: text
+            rect: [48, 16, 18, 6]
+            text: "High Turbine"
+            align_h: center
+            align_v: center
+            z_index: 3
+          - id: diagram_label_turbine_low
+            type: text
+            rect: [48, 24, 18, 6]
+            text: "Low Turbine"
+            align_h: center
+            align_v: center
+            z_index: 3
+          - id: diagram_label_electrics
+            type: text
+            rect: [6, 16, 32, 6]
+            text: "Electrics"
+            align_h: center
+            align_v: center
+            z_index: 3
+          - id: diagram_label_condenser
+            type: text
+            rect: [6, 24, 32, 6]
+            text: "Condenser"
+            align_h: center
+            align_v: center
+            z_index: 3
+      - id: footer
+        rect: [0, 45, 128, 3]
+        elements:
+          - id: footer_frame
+            type: rect
+            rect: [0, 0, 128, 3]
+            style: default
+          - id: footer_block_1
+            type: rect
+            rect: [2, 1, 12, 1]
+            style: footer_block
+          - id: footer_block_2
+            type: rect
+            rect: [16, 1, 12, 1]
+            style: footer_block_active
+          - id: footer_block_3
+            type: rect
+            rect: [120, 1, 6, 1]
+            style: footer_block
+          - id: footer_text_1
+            type: text
+            rect: [30, 1, 20, 1]
+            text: "五月雨计划"
+            text_color: Solar_Special
+            align_h: left
+            align_v: center
+          - id: footer_text_2
+            type: text
+            rect: [103, 1, 20, 1]
+            text: "Project Samidare"
+            text_color: Solar_Default
+            align_h: left
+            align_v: center
+
+  control:
+    focus_scope: nav
+    groups:
+      - id: nav
+        rect: [0, 0, 128, 4]
+        elements:
+          - id: nav_frame
+            type: rect
+            rect: [0, 0, 128, 4]
+            style: default
+            thickness: 1
+          - id: nav_status
+            type: button
+            rect: [1.8, 0.8, 15.4, 2.4]
+            label: "状态指示"
+            style: nav_button
+            scope: nav
+            nav: { right: nav_diagram }
+            on_click: go_page.status
+          - id: nav_diagram
+            type: button
+            rect: [17.8, 0.8, 15.4, 2.4]
+            label: "形式图"
+            style: nav_button
+            scope: nav
+            nav: { left: nav_status, right: nav_control }
+            on_click: go_page.diagram
+          - id: nav_control
+            type: button
+            rect: [33.8, 0.8, 15.4, 2.4]
+            label: "控制面板"
+            style: nav_button_active
+            scope: nav
+            nav: { left: nav_diagram, right: nav_core }
+            on_click: go_page.control
+          - id: nav_core
+            type: button
+            rect: [49.8, 0.8, 15.4, 2.4]
+            label: "堆芯"
+            style: nav_button
+            scope: nav
+            nav: { left: nav_control }
+            on_click: go_page.core
+          - id: logo_poly
+            type: poly
+            gx: 88
+            gy: 0
+            vertices_px:
+              - [0, 0]
+              - [56, 0]
+              - [64, 10]
+              - [8, 10]
+            style: default
+            thickness: 1
+          - id: net_indicator
+            type: rect
+            rect: [97, 1, 30, 2]
+            style: default
+            thickness: 2
+          - id: comms_indicator
+            type: rect
+            rect: [97, 2, 10, 1]
+            style: comms
+          - id: comms_text
+            type: text
+            rect: [97, 2, 10, 1]
+            text: "COMMS"
+            align_h: center
+            align_v: center
+          - id: net_info_box
+            type: rect
+            rect: [107, 1, 20, 2]
+            style: default
+          - id: net_info_text
+            type: text
+            rect: [108, 1, 18, 2]
+            text: "PORT 8787\nLATENCY --ms"
+            align_h: left
+            align_v: center
+            line_step: 1
+      - id: body
+        rect: [0, 4, 128, 41]
+        elements:
+          - id: panel_frame
+            type: rect
+            rect: [0, 0, 128, 41]
+            style: panel
+          - id: control_placeholder
+            type: text
+            rect: [4, 4, 32, 2]
+            text: "CONTROL PAGE (TODO)"
+            align_h: left
+            align_v: center
+      - id: footer
+        rect: [0, 45, 128, 3]
+        elements:
+          - id: footer_frame
+            type: rect
+            rect: [0, 0, 128, 3]
+            style: default
+          - id: footer_block_1
+            type: rect
+            rect: [2, 1, 12, 1]
+            style: footer_block
+          - id: footer_block_2
+            type: rect
+            rect: [16, 1, 12, 1]
+            style: footer_block_active
+          - id: footer_block_3
+            type: rect
+            rect: [120, 1, 6, 1]
+            style: footer_block
+          - id: footer_text_1
+            type: text
+            rect: [30, 1, 20, 1]
+            text: "五月雨计划"
+            text_color: Solar_Special
+            align_h: left
+            align_v: center
+          - id: footer_text_2
+            type: text
+            rect: [103, 1, 20, 1]
+            text: "Project Samidare"
+            text_color: Solar_Default
+            align_h: left
+            align_v: center
+
+  core:
+    focus_scope: nav
+    groups:
+      - id: nav
+        rect: [0, 0, 128, 4]
+        elements:
+          - id: nav_frame
+            type: rect
+            rect: [0, 0, 128, 4]
+            style: default
+            thickness: 1
+          - id: nav_status
+            type: button
+            rect: [1.8, 0.8, 15.4, 2.4]
+            label: "状态指示"
+            style: nav_button
+            scope: nav
+            nav: { right: nav_diagram }
+            on_click: go_page.status
+          - id: nav_diagram
+            type: button
+            rect: [17.8, 0.8, 15.4, 2.4]
+            label: "形式图"
+            style: nav_button
+            scope: nav
+            nav: { left: nav_status, right: nav_control }
+            on_click: go_page.diagram
+          - id: nav_control
+            type: button
+            rect: [33.8, 0.8, 15.4, 2.4]
+            label: "控制面板"
+            style: nav_button
+            scope: nav
+            nav: { left: nav_diagram, right: nav_core }
+            on_click: go_page.control
+          - id: nav_core
+            type: button
+            rect: [49.8, 0.8, 15.4, 2.4]
+            label: "堆芯"
+            style: nav_button_active
+            scope: nav
+            nav: { left: nav_control }
+            on_click: go_page.core
+          - id: logo_poly
+            type: poly
+            gx: 88
+            gy: 0
+            vertices_px:
+              - [0, 0]
+              - [56, 0]
+              - [64, 10]
+              - [8, 10]
+            style: default
+            thickness: 1
+          - id: net_indicator
+            type: rect
+            rect: [97, 1, 30, 2]
+            style: default
+            thickness: 2
+          - id: comms_indicator
+            type: rect
+            rect: [97, 2, 10, 1]
+            style: comms
+          - id: comms_text
+            type: text
+            rect: [97, 2, 10, 1]
+            text: "COMMS"
+            align_h: center
+            align_v: center
+          - id: net_info_box
+            type: rect
+            rect: [107, 1, 20, 2]
+            style: default
+          - id: net_info_text
+            type: text
+            rect: [108, 1, 18, 2]
+            text: "PORT 8787\nLATENCY --ms"
+            align_h: left
+            align_v: center
+            line_step: 1
+      - id: body
+        rect: [0, 4, 128, 41]
+        elements:
+          - id: panel_frame
+            type: rect
+            rect: [0, 0, 128, 41]
+            style: panel
+          - id: core_placeholder
+            type: text
+            rect: [4, 4, 32, 2]
+            text: "CORE PAGE (TODO)"
+            align_h: left
+            align_v: center
+      - id: footer
+        rect: [0, 45, 128, 3]
+        elements:
+          - id: footer_frame
+            type: rect
+            rect: [0, 0, 128, 3]
+            style: default
+          - id: footer_block_1
+            type: rect
+            rect: [2, 1, 12, 1]
+            style: footer_block
+          - id: footer_block_2
+            type: rect
+            rect: [16, 1, 12, 1]
+            style: footer_block_active
+          - id: footer_block_3
+            type: rect
+            rect: [120, 1, 6, 1]
+            style: footer_block
+          - id: footer_text_1
+            type: text
+            rect: [30, 1, 20, 1]
+            text: "五月雨计划"
+            text_color: Solar_Special
+            align_h: left
+            align_v: center
+          - id: footer_text_2
+            type: text
+            rect: [103, 1, 20, 1]
+            text: "Project Samidare"
+            text_color: Solar_Default
+            align_h: left
+            align_v: center

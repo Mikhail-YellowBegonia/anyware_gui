@@ -352,7 +352,7 @@ This section merges the former `layout_dsl_plan.md`.
 使用 **YAML**，便于阅读与手写。
 
 ### 文件组织（确认）
-- **一页一文件**：`integration_test/archive/v0.0.9/app/layouts/<page>.yaml`
+- **一页一文件**：`integration_test/v0.0.9/app/layouts/<page>.yaml`
 - 页面注册与切换逻辑仍由 Python 负责（DSL 只描述布局）
 
 ### 结构草案（补充样式、相对坐标、绑定）
@@ -497,7 +497,7 @@ group.reconcile_children(ctx, next_children)
 **关键原则**：不改渲染器，只新增一个“布局加载器”。
 
 1. 新增一个加载器：
-   - `integration_test/archive/v0.0.9/app/layout_loader.py`
+   - `integration_test/v0.0.9/app/layout_loader.py`
    - 读取 `layouts/*.yaml` 并转换为当前 Python 布局结构
 2. 现有渲染代码保持不变：
    - `render_layout(layout_dict)` 继续使用
