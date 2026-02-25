@@ -1,4 +1,18 @@
 DEM-MO typeface
-lagacy_archive
+legacy_archive
 wqy-zenhei
 wqy-unibit
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Ended tests (archived)
+integration_test/archive/
+
+# Local private assets
+assets/_private/

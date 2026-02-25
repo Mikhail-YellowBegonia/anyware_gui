@@ -42,7 +42,7 @@ Pre-adaptation status:
 - `core/anyware/` — component layer (Anyware widgets + app runtime)
 - `apps/` — runnable demos and templates
 - `assets/fonts/` — bundled fonts (ASCII + CJK)
-- `docs/` — architecture notes, tutorial, AI design guide
+- `docs/` — architecture docs, Anyware plan/reference/roadmap, GUI planning
 - `integration_test/` — integration/unit test scripts
 
 ## Prerequisites
@@ -102,15 +102,27 @@ Anyware PageStack lifecycle:
 python3 integration_test/v0.4.0/test_anyware_page_stack.py
 ```
 
+Anyware integration test v0.0.9 (Reactor UI):
+```bash
+python3 integration_test/v0.0.9/reactor_backend.py --scenario cold_start
+```
+
+```bash
+python3 integration_test/v0.0.9/app/app_reactor_ui.py
+```
+
+Notes:
+- UI will auto-start the backend if it is not already running.
+- Default address is `http://127.0.0.1:8787`.
+
 ## Fonts
 Default ASCII font is now **DEM-MOMono-300.otf**. CJK font is **wqy-zenhei.ttc**. Both live under:
 - `assets/fonts/DEM-MO typeface/Mono/`
 - `assets/fonts/wqy-zenhei/`
 
 ## Architecture Notes
-This project keeps two valid usage paths:
-- **Raw GUI path**: call `core/GUI.py` directly for low-level control.
-- **Anyware path**: use `core/anyware/*` for higher-level components.
+Anyware is the primary development path. Raw GUI access is an explicit opt-in
+for migration or specialized rendering.
 
 Layer responsibility (summary):
 - `core/GUI.py`: rendering primitives, coordinate conversion, focus/navigation, queues, global defaults.
@@ -123,7 +135,7 @@ Layer responsibility (summary):
 - If you need to place text based on pixel positions, convert back with `px()/py()`.
 
 ## AI-Assisted Design Workflow
-See `docs/AI_ASSISTED_DESIGN_GUIDE.md` for the full guide.
+See `docs/anyware/anyware_plan.md` (AI-Assisted Workflow section) for the full guide.
 
 Key constraints:
 - AI outputs **grid-first** layouts with strict coordinate discipline.
@@ -137,11 +149,10 @@ Key constraints:
 
 ## Documentation Map
 - Core docs: `docs/GUI_FRAMEWORK.md`, `docs/anyware/anyware_plan.md`
-- `docs/GUI_TUTORIAL.md` — usage tutorial and grid/pixel rules
-- `docs/GUI_FRAMEWORK.md` — GUI planning notes
-- `docs/DEV_GUIDE.md` — secondary development reference
-- `docs/anyware/anyware_plan.md` — Anyware planning notes + version
-- `docs/AI_ASSISTED_DESIGN_GUIDE.md` — AI workflow + live reload rule
+- `docs/GUI_FRAMEWORK.md` — GUI planning + consolidated usage reference
+- `docs/anyware/anyware_plan.md` — Anyware planning (primary)
+- `docs/anyware/anyware_reference.md` — Anyware deep technical reference
+- `docs/anyware/anyware_roadmap.md` — Anyware long-term roadmap
 
 ## Deployment
 This project is currently designed for local runtime and iterative UI development. No production deployment pipeline is defined yet.
