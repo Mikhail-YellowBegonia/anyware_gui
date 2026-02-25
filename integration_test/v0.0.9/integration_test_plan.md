@@ -53,12 +53,12 @@ Dynamic component management:
 
 Output separation (pre-adaptation):
 - Anyware runtime placeholders: `core/anyware/runtime.py`
-- Output rules and constraints: `docs/DEV_GUIDE.md`
+- Output rules and constraints: `docs/anyware/anyware_plan.md` (Output Separation Rules)
 
 AI-assisted workflow constraints:
 - Avoid complex animation in integration tests
 - Keep logic correct; let humans do fine tuning
-- Reference: `docs/AI_ASSISTED_DESIGN_GUIDE.md`
+- Reference: `docs/anyware/anyware_plan.md` (AI-Assisted Workflow)
 
 ## Key Code Index
 
@@ -82,4 +82,3 @@ Demos (reference only):
 - Use stable `component_id` values for all dynamically managed components.
 - Do not rebuild component trees every frame; prefer `visible/enabled` for per-frame changes.
 - Keep pygame presenter path for v0.0.9 tests.
-

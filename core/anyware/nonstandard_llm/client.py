@@ -5,23 +5,18 @@ import ssl
 import sys
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
 from typing import Iterable
 from urllib.parse import urljoin
 
 from .config import LLMConfig
-
-
-@dataclass(frozen=True)
-class ToolCallEvent:
-    raw: dict
+from .types import Message, ToolCallEvent
 
 
 class DeepSeekClient:
     def __init__(self, config: LLMConfig) -> None:
         self.config = config
 
-    def _build_payload(self, messages: list[dict], tools: list[dict] | None, tool_choice: str | None) -> dict:
+    def _build_payload(self, messages: list[Message], tools: list[dict] | None, tool_choice: str | None) -> dict:
         payload: dict = {
             "model": self.config.model,
             "messages": messages,
@@ -41,7 +36,7 @@ class DeepSeekClient:
 
     def stream_chat(
         self,
-        messages: list[dict],
+        messages: list[Message],
         tools: list[dict] | None = None,
         tool_choice: str | None = None,
     ) -> Iterable[str | ToolCallEvent]:
@@ -90,13 +85,22 @@ class DeepSeekClient:
 
 
 def _iter_sse_events(response) -> Iterable[str]:
+    data_lines: list[str] = []
     for raw_line in response:
-        line = raw_line.decode("utf-8", errors="replace").strip()
+        line = raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
         if not line:
+            if data_lines:
+                yield "\n".join(data_lines)
+                data_lines.clear()
             continue
-        if not line.startswith("data:"):
+        if line.startswith(":"):
             continue
-        yield line[len("data:") :].strip()
+        if line.startswith("data:"):
+            data_lines.append(line[len("data:") :].lstrip())
+            continue
+        # Ignore other SSE fields like id/event/retry.
+    if data_lines:
+        yield "\n".join(data_lines)
 
 
 def render_tool_event(event: ToolCallEvent) -> None:

@@ -1,0 +1,11 @@
+{
+  "provider": "deepseek",
+  "api_key_file": "assets/_private/deepseek_api_key.txt",
+  "base_url": "https://api.deepseek.com",
+  "model": "deepseek-chat",
+  "timeout_s": 60,
+  "stream": true,
+  "temperature": 0.7,
+  "top_p": 0.9,
+  "max_tokens": 1024
+}

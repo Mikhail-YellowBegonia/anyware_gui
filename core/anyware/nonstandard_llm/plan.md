@@ -1,6 +1,6 @@
 # Nonstandard LLM Adapter Plan (Anyware)
-Status: Planning only
-Last Updated: 2026-02-24
+Status: Terminal prototype (no UI)
+Last Updated: 2026-02-25
 Location: core/anyware/nonstandard_llm/
 
 ## Understanding Summary
@@ -12,7 +12,6 @@ Location: core/anyware/nonstandard_llm/
 - Periodic monitoring requests are documented only, not implemented.
 
 ## Assumptions
-- This plan is documentation-only; no code changes in this phase.
 - The adapter is code-adjacent to Anyware but not a UI component yet.
 - Terminal testing should be low-frequency, manual usage.
 
@@ -32,16 +31,17 @@ Location: core/anyware/nonstandard_llm/
 - Terminal-only testing; no UI surface yet.
 - DeepSeek is the only active provider for tests.
 
-## Proposed Module Boundaries (Planned)
-- Adapter interface: minimal client abstraction for streaming chat.
-- Provider implementation: DeepSeek-specific API wiring.
-- Message model: basic chat message structure (role, content).
-- Stream parser: parse provider streaming response and yield text deltas.
-- Terminal harness: CLI script to test streaming end-to-end.
+## Module Boundaries
+- Adapter interface: minimal client abstraction for streaming chat (`adapter.py`).
+- Provider implementation: DeepSeek-specific API wiring (`client.py`).
+- Message model: basic chat message structure (role, content) (`types.py`).
+- Stream parser: parse provider streaming response and yield text deltas (`client.py`).
+- Terminal harness: CLI script to test streaming end-to-end (`terminal_test.py`).
 
 ## Configuration Strategy
 - Local config file: `assets/_private/llm_config.local.json`
 - `assets/_private/` is gitignored to keep secrets out of git history.
+- Example template: `docs/anyware/llm_config.example.json`
 - Example fields (current):
   - provider
   - api_key_file
@@ -63,6 +63,7 @@ Location: core/anyware/nonstandard_llm/
 - Emit incremental text deltas as they arrive.
 - Provide a clear end-of-stream signal and error surface.
 - Handle connection errors and malformed chunks gracefully.
+- SSE parser accepts multiline `data:` events and ignores keepalive comments.
 
 ## Tool/Function Calling Placeholder
 - Define a structured placeholder for tool specs and tool calls.

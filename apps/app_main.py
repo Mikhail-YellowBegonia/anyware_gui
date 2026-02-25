@@ -38,7 +38,8 @@ def main():
     font_cjk = FONTS_DIR / "wqy-zenhei" / "wqy-zenhei.ttc"
     GUI.set_fonts(ascii_path=str(font_ascii), cjk_path=str(font_cjk), cell_w=8, cell_h=16, size_px=16)
 
-    screen_surf = pygame.display.set_mode(GUI.get_window_size_px(), GUI.get_window_flags())
+    screen_surf = pygame.display.set_mode(GUI.get_present_size_px(), GUI.get_window_flags())
+    GUI.apply_display_dpi_from_surface(screen_surf)
     pygame.display.set_caption("GUI Pattern Debug Demo")
     if GUI.window_always_on_top:
         GUI._set_window_always_on_top(True)

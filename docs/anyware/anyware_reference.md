@@ -460,15 +460,16 @@ PageRouter and PageStack:
 - `PageRouter` is finite state switching.
 - `PageStack` supports push/pop/replace for multi-page flows.
 
-## 13) Nonstandard LLM Adapter (Planning Only)
-### 13.1 Adapter Scope (Planning Only)
+## 13) Nonstandard LLM Adapter (Prototype, Terminal-Only)
+### 13.1 Adapter Scope (Prototype)
 Planning doc: `core/anyware/nonstandard_llm/plan.md`
 
-Current scope (planning only):
+Current scope (terminal-only prototype):
 - streaming response support (terminal-only test, no UI)
 - DeepSeek provider only for testing; Gemini reserved
 - tool/function calling placeholders (no execution)
 - config-based API key loading, with local config gitignored
+- example config template: `docs/anyware/llm_config.example.json`
 
 Explicit non-goals (for this phase):
 - no Anyware UI integration until scrollable dialog UI exists

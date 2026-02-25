@@ -37,7 +37,7 @@ Doc role: planning/architecture (primary). Deep technical reference: `anyware_re
 - ANY-SEGMENT-THEME: SegmentDisplay global theme or shared style defaults. Status: Done (2026-02-16)
 - ANY-CHECKBOX-MENU: implement `CheckboxMenu` (MVP component). Status: Done (2026-02-16)
 - ANY-LAYOUT-DSL: YAML layout DSL + loader (styles, bindings, slots). Status: In progress (2026-02-22)
-- ANY-NONSTANDARD-LLM: nonstandard LLM adapter planning (streaming + tool-call placeholders, terminal-only test). Status: Planning (2026-02-24)
+- ANY-NONSTANDARD-LLM: nonstandard LLM adapter (streaming + tool-call placeholders, terminal-only test). Status: Prototype (2026-02-25)
 
 ## 1) Overview + Status
 Anyware is the primary path for ongoing UI framework development. GUI changes are expected to be minimal and stable, while Anyware continues to evolve toward the 0.2.0 MVP target (see version block above).
@@ -55,7 +55,7 @@ Constraints (current):
 
 Active work items summary (see full list in section 0):
 - YAML Layout DSL + loader is in progress (styles, bindings, slots).
-- Nonstandard LLM adapter planning is underway (streaming + tool-call placeholders).
+- Nonstandard LLM adapter terminal prototype is available (streaming + tool-call placeholders).
 
 Deep technical details are kept in `docs/anyware/anyware_reference.md` to keep this plan concise.
 
@@ -395,7 +395,7 @@ Core components summary:
 Full parameter lists and behavior notes live in
 `docs/anyware/anyware_reference.md` section 12.
 
-## 13) Nonstandard LLM Adapter (Planning Only)
+## 13) Nonstandard LLM Adapter (Prototype, Terminal-Only)
 Planning doc: `core/anyware/nonstandard_llm/plan.md`.
 Detailed scope and UI planning live in
 `docs/anyware/anyware_reference.md` section 13.

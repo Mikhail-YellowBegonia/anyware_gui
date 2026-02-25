@@ -66,6 +66,11 @@ Run an Anyware demo:
 python3 apps/app_anyware_demo.py
 ```
 
+## HiDPI / Retina
+If you create your own pygame window, call `GUI.apply_display_dpi_from_surface(screen_surf)` after
+`pygame.display.set_mode(...)` so the engine can sync DPI scaling. Anyware runtime and demo apps
+already do this.
+
 ## Live Reload Layout Demo (AI-assisted tuning)
 This demo loads layout parameters from a separate file and hot-reloads on save.
 

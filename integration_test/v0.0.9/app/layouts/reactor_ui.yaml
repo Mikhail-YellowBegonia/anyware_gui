@@ -35,6 +35,13 @@ styles:
   comms:
     color: Solar_Special
     filled: true
+  demo_button_fill:
+    color: Solar_Default
+    filled: true
+  demo_button_border:
+    color: Solar_Default
+    line_color: Solar_Default
+    thickness: 2
 
 pages:
   status:
@@ -99,7 +106,11 @@ pages:
           - id: comms_indicator
             type: rect
             rect: [97, 2, 10, 1]
-            style: comms
+            style: default
+            bind_style:
+              color: net.comms_color
+              line_color: net.comms_color
+              filled: net.comms_on
           - id: comms_text
             type: text
             rect: [97, 2, 10, 1]
@@ -113,7 +124,8 @@ pages:
           - id: net_info_text
             type: text
             rect: [108, 1, 18, 2]
-            text: "PORT 8787\nLATENCY --ms"
+            text: "PORT --\nLATENCY --ms"
+            bind: net.info
             align_h: left
             align_v: center
             line_step: 1
@@ -156,7 +168,7 @@ pages:
           - id: footer_text_1
             type: text
             rect: [30, 1, 20, 1]
-            text: "五月雨计划"
+            text: "谷雨计划"
             text_color: Solar_Special
             align_h: left
             align_v: center
@@ -164,7 +176,7 @@ pages:
           - id: footer_text_2
             type: text
             rect: [103, 1, 20, 1]
-            text: "Project Samidare"
+            text: "Project Koyuu"
             text_color: Solar_Default
             align_h: left
             align_v: center
@@ -172,6 +184,8 @@ pages:
 
   diagram:
     focus_scope: nav
+    components:
+      demo_fill_gauge: false
     groups:
       - id: nav
         rect: [0, 0, 128, 4]
@@ -197,7 +211,7 @@ pages:
             label: "形式图"
             style: nav_button_active
             scope: nav
-            nav: { left: nav_status, right: nav_control }
+            nav: { left: nav_status, right: nav_control, down: demo_button }
             on_click: go_page.diagram
             z_index: 1
           - id: nav_control
@@ -239,7 +253,11 @@ pages:
           - id: comms_indicator
             type: rect
             rect: [97, 2, 10, 1]
-            style: comms
+            style: default
+            bind_style:
+              color: net.comms_color
+              line_color: net.comms_color
+              filled: net.comms_on
             z_index: 1
           - id: comms_text
             type: text
@@ -256,7 +274,8 @@ pages:
           - id: net_info_text
             type: text
             rect: [108, 1, 18, 2]
-            text: "PORT 8787\nLATENCY --ms"
+            text: "PORT --\nLATENCY --ms"
+            bind: net.info
             align_h: left
             align_v: center
             line_step: 1
@@ -272,51 +291,51 @@ pages:
           - id: diagram_arrow_1
             type: arrow
             start_gx: 104
-            start_gy: 19
+            start_gy: 23
             end_gx: 94
-            end_gy: 19
+            end_gy: 23
             z_index: 1
           - id: diagram_arrow_2
             type: arrow
             start_gx: 94
-            start_gy: 27
+            start_gy: 31
             end_gx: 104
-            end_gy: 27
+            end_gy: 31
             z_index: 1
           - id: diagram_arrow_3
             type: arrow
             start_gx: 76
-            start_gy: 19
+            start_gy: 23
             end_gx: 66
-            end_gy: 19
+            end_gy: 23
             z_index: 1
           - id: diagram_arrow_4
             type: arrow
             start_gx: 57
-            start_gy: 22
+            start_gy: 26
             end_gx: 57
-            end_gy: 24
+            end_gy: 26
             z_index: 1
           - id: diagram_arrow_5
             type: arrow
             start_gx: 38
-            start_gy: 27
+            start_gy: 31
             end_gx: 76
-            end_gy: 27
+            end_gy: 31
             z_index: 1
           - id: diagram_arrow_6
             type: arrow
             start_gx: 48
-            start_gy: 19
+            start_gy: 23
             end_gx: 38
-            end_gy: 19
+            end_gy: 23
             z_index: 1
           - id: diagram_arrow_7
             type: arrow
             start_gx: 48
-            start_gy: 26
+            start_gy: 30
             end_gx: 38
-            end_gy: 26
+            end_gy: 30
             z_index: 1
           - id: diagram_box_core
             type: rect
@@ -390,6 +409,84 @@ pages:
             align_h: center
             align_v: center
             z_index: 3
+        groups:
+          - id: demo_complex_button
+            rect: [6, 6, 30, 8]
+            interaction:
+              type: button
+              id: demo_button
+              scope: nav
+              nav: { up: nav_diagram }
+              on_click: go_page.diagram
+            elements:
+              - id: demo_btn_bg
+                type: rect
+                rect: [0, 0, 28, 3]
+                style: demo_button_fill
+                state_styles:
+                  hover: { color: Solar_Special, filled: true }
+                  active: { color: Solar_Special, filled: true }
+                z_index: 1
+              - id: demo_btn_border
+                type: rect
+                rect: [0, 0, 28, 3]
+                style: demo_button_border
+                filled: false
+                state_styles:
+                  hover: { color: Solar_Special, line_color: Solar_Special }
+                  active: { color: Solar_Special, line_color: Solar_Special }
+                z_index: 2
+              - id: demo_btn_text_left
+                type: text
+                rect: [1, 0, 8, 3]
+                text: "- Menu"
+                text_color: Solar_Special
+                align_h: left
+                align_v: center
+                z_index: 3
+              - id: demo_btn_text_center
+                type: text
+                rect: [9, 0, 10, 3]
+                text: "S a v E"
+                text_color: Solar_Default
+                align_h: center
+                align_v: center
+                z_index: 3
+              - id: demo_btn_text_right
+                type: text
+                rect: [19, 0, 9, 3]
+                text: "保存"
+                text_color: Solar_Special
+                align_h: right
+                align_v: center
+                z_index: 3
+          - id: demo_rotated_text
+            rect: [42, 8, 36, 3]
+            elements:
+              - id: demo_rotated_text_label
+                type: text
+                rect: [0, 0, 36, 1]
+                text: "ROTATED TEXT (TODO)"
+                align_h: left
+                align_v: center
+                z_index: 2
+              - id: demo_rotated_text_note
+                type: text
+                rect: [0, 1, 36, 1]
+                text: "Needs arbitrary angle support"
+                align_h: left
+                align_v: center
+                z_index: 2
+        #  - id: demo_fill_gauge_label
+        #    rect: [18, 36, 20, 2]
+        #    elements:
+        #      - id: demo_gauge_text
+        #        type: text
+        #        rect: [0, 0, 20, 1]
+        #        text: "FILL GAUGE"
+        #        align_h: left
+        #        align_v: center
+        #        z_index: 2
       - id: footer
         rect: [0, 45, 128, 3]
         elements:
@@ -412,14 +509,14 @@ pages:
           - id: footer_text_1
             type: text
             rect: [30, 1, 20, 1]
-            text: "五月雨计划"
+            text: "谷雨计划"
             text_color: Solar_Special
             align_h: left
             align_v: center
           - id: footer_text_2
             type: text
             rect: [103, 1, 20, 1]
-            text: "Project Samidare"
+            text: "Project Koyuu"
             text_color: Solar_Default
             align_h: left
             align_v: center
@@ -486,7 +583,11 @@ pages:
           - id: comms_indicator
             type: rect
             rect: [97, 2, 10, 1]
-            style: comms
+            style: default
+            bind_style:
+              color: net.comms_color
+              line_color: net.comms_color
+              filled: net.comms_on
           - id: comms_text
             type: text
             rect: [97, 2, 10, 1]
@@ -500,7 +601,8 @@ pages:
           - id: net_info_text
             type: text
             rect: [108, 1, 18, 2]
-            text: "PORT 8787\nLATENCY --ms"
+            text: "PORT --\nLATENCY --ms"
+            bind: net.info
             align_h: left
             align_v: center
             line_step: 1
@@ -539,14 +641,14 @@ pages:
           - id: footer_text_1
             type: text
             rect: [30, 1, 20, 1]
-            text: "五月雨计划"
+            text: "谷雨计划"
             text_color: Solar_Special
             align_h: left
             align_v: center
           - id: footer_text_2
             type: text
             rect: [103, 1, 20, 1]
-            text: "Project Samidare"
+            text: "Project Koyuu"
             text_color: Solar_Default
             align_h: left
             align_v: center
@@ -613,7 +715,11 @@ pages:
           - id: comms_indicator
             type: rect
             rect: [97, 2, 10, 1]
-            style: comms
+            style: default
+            bind_style:
+              color: net.comms_color
+              line_color: net.comms_color
+              filled: net.comms_on
           - id: comms_text
             type: text
             rect: [97, 2, 10, 1]
@@ -627,7 +733,8 @@ pages:
           - id: net_info_text
             type: text
             rect: [108, 1, 18, 2]
-            text: "PORT 8787\nLATENCY --ms"
+            text: "PORT --\nLATENCY --ms"
+            bind: net.info
             align_h: left
             align_v: center
             line_step: 1
@@ -666,14 +773,14 @@ pages:
           - id: footer_text_1
             type: text
             rect: [30, 1, 20, 1]
-            text: "五月雨计划"
+            text: "谷雨计划"
             text_color: Solar_Special
             align_h: left
             align_v: center
           - id: footer_text_2
             type: text
             rect: [103, 1, 20, 1]
-            text: "Project Samidare"
+            text: "Project Koyuu"
             text_color: Solar_Default
             align_h: left
             align_v: center

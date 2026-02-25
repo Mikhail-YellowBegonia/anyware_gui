@@ -25,6 +25,7 @@ def main():
     window_height = int(pad * 2 + rows * eff_h)
 
     screen_surf = pygame.display.set_mode((window_width, window_height), pygame.NOFRAME)
+    GUI.apply_display_dpi_from_surface(screen_surf)
     pygame.display.set_caption("GUI Template")
     GUI._set_window_always_on_top(True)
     clock = pygame.time.Clock()

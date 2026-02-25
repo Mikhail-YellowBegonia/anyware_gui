@@ -3,6 +3,7 @@ from __future__ import annotations
 import colorsys
 import hashlib
 import time
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -86,11 +87,85 @@ def _merge_style(target: dict[str, Any], source: dict[str, Any] | None) -> None:
         target[key] = value
 
 
+_WARNED_STYLE_KEYS: set[str] = set()
+_TEXT_TYPES = {"text", "super_text"}
+_SHAPE_TYPES = {"rect", "box", "poly", "arrow"}
+
+
+def _warn_style_once(key: str, message: str) -> None:
+    if key in _WARNED_STYLE_KEYS:
+        return
+    _WARNED_STYLE_KEYS.add(key)
+    warnings.warn(message)
+
+
+def _normalize_color_style(
+    style: dict[str, Any],
+    element_type: str | None,
+    element_id: str | None,
+) -> dict[str, Any]:
+    if element_type is None:
+        return style
+
+    normalized = dict(style)
+    label = element_id or element_type
+
+    if element_type in _TEXT_TYPES:
+        if "text_color" not in normalized and "color" in normalized:
+            normalized["text_color"] = normalized.get("color")
+        if "color" in normalized and "text_color" in normalized:
+            if normalized.get("color") != normalized.get("text_color"):
+                _warn_style_once(
+                    f"text-color-conflict:{label}",
+                    f"[layout_dsl] {label} defines both color and text_color with different values; "
+                    "text_color will be used for text rendering.",
+                )
+        return normalized
+
+    if element_type in _SHAPE_TYPES:
+        fill_value = normalized.get("fill")
+        filled_flag = bool(normalized.get("filled") or fill_value is not None)
+
+        if isinstance(fill_value, str):
+            normalized.setdefault("fill_color", fill_value)
+            normalized.setdefault("filled", True)
+            filled_flag = True
+        elif fill_value is not None and not isinstance(fill_value, bool):
+            normalized.setdefault("filled", True)
+            filled_flag = True
+
+        if "line_color" not in normalized and "color" in normalized:
+            normalized["line_color"] = normalized.get("color")
+
+        if filled_flag and "fill_color" not in normalized and "color" in normalized:
+            if normalized.get("line_color") != normalized.get("color"):
+                normalized["fill_color"] = normalized.get("color")
+
+        if (
+            "color" in normalized
+            and "line_color" in normalized
+            and normalized.get("color") != normalized.get("line_color")
+            and not filled_flag
+            and "fill_color" not in normalized
+        ):
+            _warn_style_once(
+                f"shape-color-conflict:{label}",
+                f"[layout_dsl] {label} defines color and line_color with different values, "
+                "but fill is not enabled; color will be ignored.",
+            )
+        return normalized
+
+    return normalized
+
+
 def _resolve_style(
     styles: dict[str, Any],
     group_style: dict[str, Any] | None,
     element_style: dict[str, Any] | None,
     element: dict[str, Any],
+    *,
+    element_type: str | None = None,
+    element_id: str | None = None,
 ) -> dict[str, Any]:
     resolved: dict[str, Any] = {}
     _merge_style(resolved, styles.get("default"))
@@ -109,6 +184,7 @@ def _resolve_style(
             "line_color",
             "fill",
             "filled",
+            "fill_color",
             "thickness",
             "align_h",
             "align_v",
@@ -118,8 +194,16 @@ def _resolve_style(
             "label_align_v",
             "label_orientation",
             "label_line_step",
+            "pattern",
+            "pattern_color",
+            "pattern_spacing",
+            "pattern_angle_deg",
+            "pattern_thickness",
+            "pattern_offset",
+            "pattern_outline",
         }:
             resolved[key] = value
+    resolved = _normalize_color_style(resolved, element_type, element_id)
     return resolved
 
 
@@ -171,6 +255,73 @@ class LayoutRenderPlan:
     components: list[Any]
     drawables: list[dict[str, Any]]
     slots: dict[str, dict[str, Any]]
+    state_sources: dict[str, Any]
+
+
+_STATE_STYLE_KEYS = {
+    "color",
+    "text_color",
+    "line_color",
+    "fill",
+    "filled",
+    "fill_color",
+    "thickness",
+    "align_h",
+    "align_v",
+    "line_step",
+    "orientation",
+    "label_align_h",
+    "label_align_v",
+    "label_orientation",
+    "label_line_step",
+    "pattern",
+    "pattern_color",
+    "pattern_spacing",
+    "pattern_angle_deg",
+    "pattern_thickness",
+    "pattern_offset",
+    "pattern_outline",
+}
+
+
+def _apply_state_style(base: dict[str, Any], overlay: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(overlay, dict) or not overlay:
+        return base
+    merged = dict(base)
+    for key, value in overlay.items():
+        if key in _STATE_STYLE_KEYS:
+            merged[key] = value
+    if "color" in overlay and "text_color" not in overlay:
+        merged["text_color"] = overlay.get("color")
+    return merged
+
+
+def _apply_bound_style(
+    base: dict[str, Any],
+    bind_style: dict[str, Any] | None,
+    bindings: Any,
+    ctx,
+    *,
+    element_type: str | None = None,
+    element_id: str | None = None,
+) -> dict[str, Any]:
+    if not isinstance(bind_style, dict) or not bind_style:
+        return base
+    merged = dict(base)
+    for key, bind_key in bind_style.items():
+        if bind_key is None:
+            continue
+        value = _resolve_binding(bindings, str(bind_key), ctx)
+        if value is None:
+            continue
+        merged[key] = value
+    merged = _normalize_color_style(merged, element_type, element_id)
+    return merged
+
+
+class _InvisibleButton(Button):
+    def render(self, ctx) -> None:
+        return None
 
 
 class LayoutReloader:
@@ -239,6 +390,7 @@ def compile_layout(
     drawables: list[dict[str, Any]] = []
     components: list[Any] = []
     slots: dict[str, dict[str, Any]] = {}
+    state_sources: dict[str, Any] = {}
 
     def compile_elements(
         elements: Iterable[dict[str, Any]],
@@ -246,6 +398,7 @@ def compile_layout(
         origin_gx: float = 0.0,
         origin_gy: float = 0.0,
         group_style: dict[str, Any] | str | None = None,
+        state_owner: str | None = None,
     ) -> None:
         for idx, element in enumerate(elements):
             if not isinstance(element, dict):
@@ -261,8 +414,15 @@ def compile_layout(
             gx, gy, gw, gh = _normalize_rect(element)
             gx += origin_gx
             gy += origin_gy
-            style = _resolve_style(styles, group_style, element.get("style"), element)
             element_id = str(element.get("id") or stable_component_id(etype, seed=idx))
+            style = _resolve_style(
+                styles,
+                group_style,
+                element.get("style"),
+                element,
+                element_type=etype,
+                element_id=element_id,
+            )
             z_index = int(element.get("z_index", 0))
             stable_order = _stable_hash(element_id)
 
@@ -300,6 +460,7 @@ def compile_layout(
                         ),
                     )
                 )
+                state_sources[element_id] = components[-1]
                 continue
 
             drawables.append(
@@ -314,20 +475,72 @@ def compile_layout(
                     "element": element,
                     "z_index": z_index,
                     "stable_order": stable_order,
+                    "state_owner": state_owner,
+                    "state_styles": element.get("state_styles"),
                 }
             )
 
-    def compile_group(group: dict[str, Any], *, parent_origin=(0.0, 0.0), parent_style=None) -> None:
+    def compile_group(
+        group: dict[str, Any],
+        *,
+        parent_origin=(0.0, 0.0),
+        parent_style=None,
+        parent_state_owner: str | None = None,
+    ) -> None:
         gx, gy, gw, gh = _normalize_rect(group)
         origin_gx = parent_origin[0] + gx
         origin_gy = parent_origin[1] + gy
         group_style = group.get("style", parent_style)
+        group_state_owner = parent_state_owner
+
+        interaction = group.get("interaction")
+        if isinstance(interaction, dict) and str(interaction.get("type", "button")).lower() == "button":
+            interaction_id = str(interaction.get("id") or group.get("id") or stable_component_id("group_button"))
+            x1 = ctx.gx(origin_gx)
+            y1 = ctx.gy(origin_gy)
+            x2 = ctx.gx(origin_gx + gw)
+            y2 = ctx.gy(origin_gy + gh)
+            on_click = interaction.get("on_click")
+            nav = interaction.get("nav")
+            scope = interaction.get("scope") or page.get("focus_scope") or document.globals.get("focus_scope") or "main"
+            button = _InvisibleButton(
+                interaction_id,
+                "",
+                gx=origin_gx,
+                gy=origin_gy,
+                width_px=x2 - x1,
+                height_px=y2 - y1,
+                scope=str(scope),
+                nav=nav,
+                on_select=(
+                    None
+                    if on_click is None
+                    else (lambda btn, c, action=str(on_click), element=group: _dispatch_action(actions, action, btn, c, element))
+                ),
+                pressable=bool(interaction.get("pressable", True)),
+                focusable=bool(interaction.get("focusable", True)),
+            )
+            components.append(button)
+            state_sources[interaction_id] = button
+            group_state_owner = interaction_id
+
         elements = group.get("elements", [])
         if isinstance(elements, list):
-            compile_elements(elements, origin_gx=origin_gx, origin_gy=origin_gy, group_style=group_style)
+            compile_elements(
+                elements,
+                origin_gx=origin_gx,
+                origin_gy=origin_gy,
+                group_style=group_style,
+                state_owner=group_state_owner,
+            )
         for child in group.get("groups", []) or []:
             if isinstance(child, dict):
-                compile_group(child, parent_origin=(origin_gx, origin_gy), parent_style=group_style)
+                compile_group(
+                    child,
+                    parent_origin=(origin_gx, origin_gy),
+                    parent_style=group_style,
+                    parent_state_owner=group_state_owner,
+                )
 
     page_elements = page.get("elements", [])
     if isinstance(page_elements, list):
@@ -339,7 +552,13 @@ def compile_layout(
 
     drawables.sort(key=lambda item: (item["z_index"], item["stable_order"]))
 
-    return LayoutRenderPlan(page_id=page_id, components=components, drawables=drawables, slots=slots)
+    return LayoutRenderPlan(
+        page_id=page_id,
+        components=components,
+        drawables=drawables,
+        slots=slots,
+        state_sources=state_sources,
+    )
 
 
 def _dispatch_action(actions: dict[str, Callable], action: str, button, ctx, element) -> None:
@@ -359,11 +578,39 @@ def _dispatch_action(actions: dict[str, Callable], action: str, button, ctx, ele
     fn(ctx)
 
 
+def _resolve_state(plan: LayoutRenderPlan, ctx, owner_id: str | None) -> str:
+    if owner_id is None:
+        return "normal"
+    source = plan.state_sources.get(owner_id)
+    if source is not None and getattr(source, "selected", False):
+        return "active"
+    if ctx.get_focus(None) == owner_id:
+        return "hover"
+    return "normal"
+
+
 def render_layout(ctx, plan: LayoutRenderPlan, *, bindings: Any = None) -> None:
     for item in plan.drawables:
         etype = item["type"]
         element = item["element"]
         style = item["style"]
+        element_id = item.get("id")
+        state_styles = item.get("state_styles")
+        if isinstance(state_styles, dict) and state_styles:
+            state = _resolve_state(plan, ctx, item.get("state_owner"))
+            overlay = state_styles.get(state)
+            if overlay is None and state != "normal":
+                overlay = state_styles.get("normal")
+            style = _apply_state_style(style, overlay)
+        style = _apply_bound_style(
+            style,
+            element.get("bind_style"),
+            bindings,
+            ctx,
+            element_type=etype,
+            element_id=element_id,
+        )
+        style = _normalize_color_style(style, etype, element_id)
         gx = item["gx"]
         gy = item["gy"]
         gw = item["gw"]
@@ -406,15 +653,61 @@ def render_layout(ctx, plan: LayoutRenderPlan, *, bindings: Any = None) -> None:
             y1 = ctx.gy(gy)
             x2 = ctx.gx(gx + gw)
             y2 = ctx.gy(gy + gh)
-            ctx.draw_rect(
-                style.get("line_color") or style.get("color") or "White",
-                x1,
-                y1,
-                x2 - x1,
-                y2 - y1,
-                filled=bool(style.get("filled", style.get("fill") is not None)),
-                thickness=style.get("thickness", 1),
-            )
+            line_color = style.get("line_color") or style.get("color") or "White"
+            fill_color = style.get("fill_color")
+            filled = bool(style.get("filled", style.get("fill") is not None))
+            pattern_cfg = style.get("pattern")
+            pattern_enabled = bool(pattern_cfg)
+            pattern_opts = dict(pattern_cfg) if isinstance(pattern_cfg, dict) else {}
+            spacing = pattern_opts.get("spacing", style.get("pattern_spacing"))
+            angle_deg = pattern_opts.get("angle_deg", style.get("pattern_angle_deg"))
+            pattern_thickness = pattern_opts.get("thickness", style.get("pattern_thickness"))
+            offset = pattern_opts.get("offset", style.get("pattern_offset"))
+            pattern_color = pattern_opts.get("color", style.get("pattern_color", line_color))
+            pattern_outline = pattern_opts.get("outline", style.get("pattern_outline", True))
+
+            if filled:
+                ctx.draw_rect(
+                    fill_color or line_color,
+                    x1,
+                    y1,
+                    x2 - x1,
+                    y2 - y1,
+                    filled=True,
+                    thickness=style.get("thickness", 1),
+                )
+            if pattern_enabled:
+                ctx.draw_pattern_rect(
+                    pattern_color or line_color,
+                    x1,
+                    y1,
+                    x2 - x1,
+                    y2 - y1,
+                    spacing=spacing,
+                    angle_deg=angle_deg,
+                    thickness=pattern_thickness,
+                    offset=offset,
+                )
+                if pattern_outline:
+                    ctx.draw_rect(
+                        line_color,
+                        x1,
+                        y1,
+                        x2 - x1,
+                        y2 - y1,
+                        filled=False,
+                        thickness=style.get("thickness", 1),
+                    )
+            elif not filled:
+                ctx.draw_rect(
+                    line_color,
+                    x1,
+                    y1,
+                    x2 - x1,
+                    y2 - y1,
+                    filled=False,
+                    thickness=style.get("thickness", 1),
+                )
             continue
 
         if etype == "box":
@@ -434,14 +727,57 @@ def render_layout(ctx, plan: LayoutRenderPlan, *, bindings: Any = None) -> None:
                 continue
             origin_x = ctx.gx(gx)
             origin_y = ctx.gy(gy)
-            ctx.draw_poly(
-                vertices,
-                style.get("line_color") or style.get("color") or "White",
-                origin_x,
-                origin_y,
-                filled=bool(style.get("filled", style.get("fill") is not None)),
-                thickness=style.get("thickness", 1),
-            )
+            line_color = style.get("line_color") or style.get("color") or "White"
+            fill_color = style.get("fill_color")
+            filled = bool(style.get("filled", style.get("fill") is not None))
+            pattern_cfg = style.get("pattern")
+            pattern_enabled = bool(pattern_cfg)
+            pattern_opts = dict(pattern_cfg) if isinstance(pattern_cfg, dict) else {}
+            spacing = pattern_opts.get("spacing", style.get("pattern_spacing"))
+            angle_deg = pattern_opts.get("angle_deg", style.get("pattern_angle_deg"))
+            pattern_thickness = pattern_opts.get("thickness", style.get("pattern_thickness"))
+            offset = pattern_opts.get("offset", style.get("pattern_offset"))
+            pattern_color = pattern_opts.get("color", style.get("pattern_color", line_color))
+            pattern_outline = pattern_opts.get("outline", style.get("pattern_outline", True))
+
+            if filled:
+                ctx.draw_poly(
+                    vertices,
+                    fill_color or line_color,
+                    origin_x,
+                    origin_y,
+                    filled=True,
+                    thickness=style.get("thickness", 1),
+                )
+            if pattern_enabled:
+                ctx.draw_pattern_poly(
+                    vertices,
+                    pattern_color or line_color,
+                    origin_x,
+                    origin_y,
+                    spacing=spacing,
+                    angle_deg=angle_deg,
+                    thickness=pattern_thickness,
+                    offset=offset,
+                )
+                if pattern_outline:
+                    ctx.draw_poly(
+                        vertices,
+                        line_color,
+                        origin_x,
+                        origin_y,
+                        filled=False,
+                        thickness=style.get("thickness", 1),
+                    )
+            elif not filled:
+                ctx.draw_poly(
+                    vertices,
+                    line_color,
+                    origin_x,
+                    origin_y,
+                    filled=False,
+                    thickness=style.get("thickness", 1),
+                )
             continue
 
         if etype == "arrow":
@@ -516,6 +852,68 @@ class LayoutPage(Page):
             GUI.set_layout_mode(bool(layout_mode))
         _install_palette(doc.globals)
 
+    def _normalize_component_overrides(self, raw: Any) -> dict[str, dict[str, Any]]:
+        if not isinstance(raw, dict):
+            return {}
+        overrides: dict[str, dict[str, Any]] = {}
+        for key, value in raw.items():
+            if isinstance(value, dict):
+                overrides[str(key)] = dict(value)
+                continue
+            overrides[str(key)] = {"enabled": bool(value), "visible": bool(value)}
+        return overrides
+
+    def _collect_component_overrides(self) -> dict[str, dict[str, Any]]:
+        doc = self._layout.document
+        if doc is None:
+            return {}
+
+        page_block = doc.pages.get(self.page_id, {})
+        overrides: dict[str, dict[str, Any]] = {}
+
+        def add_overrides(raw: Any) -> None:
+            normalized = self._normalize_component_overrides(raw)
+            if not normalized:
+                return
+            overrides.update(normalized)
+
+        def add_disabled(raw: Any) -> None:
+            if not isinstance(raw, (list, tuple, set)):
+                return
+            for item in raw:
+                overrides[str(item)] = {"enabled": False, "visible": False}
+
+        add_overrides(doc.globals.get("components"))
+        add_overrides(page_block.get("components"))
+        add_disabled(doc.globals.get("disable_components") or doc.globals.get("disabled_components"))
+        add_disabled(page_block.get("disable_components") or page_block.get("disabled_components"))
+
+        return overrides
+
+    def _apply_component_overrides(self, components: Iterable[Any]) -> list[Any]:
+        overrides = self._collect_component_overrides()
+        if not overrides:
+            return list(components)
+
+        filtered: list[Any] = []
+        for component in components:
+            component_id = getattr(component, "component_id", None)
+            if component_id is None:
+                filtered.append(component)
+                continue
+            override = overrides.get(str(component_id))
+            if override is None:
+                filtered.append(component)
+                continue
+            if override.get("present") is False or override.get("remove") is True:
+                continue
+            if "enabled" in override:
+                component.enabled = bool(override["enabled"])
+            if "visible" in override:
+                component.visible = bool(override["visible"])
+            filtered.append(component)
+        return filtered
+
     def _sync_components(self, ctx) -> None:
         doc = self._layout.document
         if doc is None:
@@ -530,6 +928,10 @@ class LayoutPage(Page):
         self._layout.error = None
         self._plan = plan
         self.set_components(ctx, self._plan.components)
+
+    def set_components(self, ctx, components, *, ensure_focus: bool = True) -> None:
+        filtered = self._apply_component_overrides(components)
+        super().set_components(ctx, filtered, ensure_focus=ensure_focus)
 
     def on_enter(self, ctx) -> None:
         self._apply_globals()

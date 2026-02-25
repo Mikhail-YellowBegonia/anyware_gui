@@ -14,8 +14,9 @@ def _bootstrap_repo_root() -> None:
 
 
 def _lazy_imports():
-    from core.anyware.nonstandard_llm.client import DeepSeekClient, ToolCallEvent, render_tool_event
+    from core.anyware.nonstandard_llm.client import DeepSeekClient, render_tool_event
     from core.anyware.nonstandard_llm.config import load_config
+    from core.anyware.nonstandard_llm.types import ToolCallEvent
 
     return DeepSeekClient, ToolCallEvent, render_tool_event, load_config
 
