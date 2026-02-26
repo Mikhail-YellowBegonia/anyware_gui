@@ -6,7 +6,7 @@ import sys
 import urllib.error
 import urllib.request
 from typing import Iterable
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from .config import LLMConfig
 from .types import Message, ToolCallEvent
@@ -43,9 +43,10 @@ class DeepSeekClient:
         if not self.config.stream:
             raise ValueError("stream_chat requires stream=True in config")
 
+        base_url = _validate_base_url(self.config.base_url)
         payload = self._build_payload(messages, tools, tool_choice)
         body = json.dumps(payload).encode("utf-8")
-        url = urljoin(self.config.base_url.rstrip("/") + "/", "chat/completions")
+        url = urljoin(base_url.rstrip("/") + "/", "chat/completions")
 
         headers = {
             "Authorization": f"Bearer {self.config.api_key}",
@@ -57,7 +58,11 @@ class DeepSeekClient:
         context = ssl.create_default_context()
 
         try:
-            with urllib.request.urlopen(request, timeout=self.config.timeout_s, context=context) as response:
+            with urllib.request.urlopen(  # nosec B310 - base_url validated to http/https only.
+                request,
+                timeout=self.config.timeout_s,
+                context=context,
+            ) as response:
                 for event in _iter_sse_events(response):
                     if event == "[DONE]":
                         return
@@ -101,6 +106,14 @@ def _iter_sse_events(response) -> Iterable[str]:
         # Ignore other SSE fields like id/event/retry.
     if data_lines:
         yield "\n".join(data_lines)
+
+
+def _validate_base_url(base_url: str) -> str:
+    value = base_url.strip()
+    parsed = urlparse(value)
+    if parsed.scheme not in {"https", "http"} or not parsed.netloc:
+        raise ValueError("base_url must include http/https scheme and host")
+    return value
 
 
 def render_tool_event(event: ToolCallEvent) -> None:

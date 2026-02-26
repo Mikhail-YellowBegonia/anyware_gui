@@ -196,6 +196,8 @@ def main() -> int:
     parser.add_argument("--base-url", default=None)
     args = parser.parse_args()
 
+    prompt_spec: tuple[str, str] | None
+
     if args.prompts:
         prompt_spec = ("names", args.prompts)
         system_prompt = _load_system_prompt_from_spec(prompt_spec)

@@ -214,7 +214,7 @@ def base_hsv_palette():
 def custom_hsv_palette(palette):
     palette[201] = (0.3, 1.0, 0.9, "CRT_Green") 
     palette[202] = (0.14, 1.0, 0.9, "Electroluminescent_Amber")
-    palette[203] = (0.5, 1.0, 0.8, "CRT_Cyan")
+    palette[203] = (0.548, 0.281, 0.78, "CRT_Cyan")
     palette[204] = (0.0, 0.0, 1.0, "White")
     palette[205] = (0.0, 0.0, 0.0, "Black")
     palette[211] = (0.92, 1.0, 1.0, "neon_pink")
@@ -222,6 +222,12 @@ def custom_hsv_palette(palette):
     palette[213] = (0.3, 1.0, 1.0, "neon_green")
     palette[214] = (0.08, 1.0, 1.0, "neon_yellow")
     palette[215] = (0.8, 1.0, 1.0, "neon_violet")
+    palette[216] = (0.593, 0.45, 0.078, "Noir_Background")
+    palette[217] = (0.588, 0.201, 0.78, "Noir_Default")
+    palette[218] = (0.416, 0.387, 0.78, "Noir_Special")
+    palette[219] = (0.077, 0.051, 0.992, "Solar_Background")
+    palette[220] = (0.54, 0.248, 0.459, "Solar_Default")
+    palette[221] = (0.251, 0.815, 0.804, "Solar_Special")
     return palette
 
 hsv_palette = custom_hsv_palette(base_hsv_palette())

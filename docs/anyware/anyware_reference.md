@@ -460,23 +460,38 @@ PageRouter and PageStack:
 - `PageRouter` is finite state switching.
 - `PageStack` supports push/pop/replace for multi-page flows.
 
-## 13) Nonstandard LLM Adapter (Prototype, Terminal-Only)
+## 13) Nonstandard LLM Adapter (Prototype + Demo Integration)
 ### 13.1 Adapter Scope (Prototype)
 Planning doc: `core/anyware/nonstandard_llm/plan.md`
 
-Current scope (terminal-only prototype):
-- streaming response support (terminal-only test, no UI)
+Current scope (prototype + demo integration):
+- streaming response support (terminal harness + Anyware demo page)
 - DeepSeek provider only for testing; Gemini reserved
-- tool/function calling placeholders (no execution)
+- middleware tool dispatch for `[CALL]` intents (provider-native tool_calls still placeholders)
 - config-based API key loading, with local config gitignored
 - example config template: `docs/anyware/llm_config.example.json`
+- TextViewport auto-wrap enabled (CJK-safe)
 
 Explicit non-goals (for this phase):
-- no Anyware UI integration until scrollable dialog UI exists
 - no periodic monitoring loop implementation yet (documented only)
 
 ### 13.2 LLM UI Plan (Streaming Chat)
-Status: planning only. No code changes in this phase.
+Status: prototype implemented and wired into Anyware demo; packaged as reusable page.
+Implementation seed: `core/anyware/llm_ui.py`.
+Reusable page: `core/anyware/llm_page.py` (`LLMPage`).
+Demo entry point: `apps/app_anyware_demo.py` (press `L` to enter).
+Notes:
+- `ChatDialogPanel.start_stream(...)` + `poll_stream(...)` provide a non-blocking hook for streaming deltas.
+- `status_message` surfaces tool-call placeholders or auto-follow pause state.
+- `LLMPage` wraps the dialog + streaming session + tool dispatch into a standard Anyware Page.
+
+Usage (packaged page):
+- `from core.anyware import LLMPage`
+- Typical init:
+  - `system_prompt`: string or callable returning string
+  - `dispatcher`: `ToolDispatcher` (optional; enables middleware tool calls)
+  - `client_factory` or `config_path` (optional; defaults to `ANYWARE_LLM_CONFIG`)
+  - `on_back`: callback for Ctrl+H
 
 Understanding summary:
 - Build a streaming chat dialog component for Anyware.
@@ -503,6 +518,10 @@ Non-goals:
 - No rich text beyond color-coded spans.
 - No persistence to disk.
 - No multi-user or multi-session support.
+
+Ideas (future, not implemented):
+- Idle/heartbeat prompts: let the assistant occasionally speak or summarize system status without user input.
+- Tool stress tests: scripted tool invocations (e.g., get_time, echo, math_eval) to validate dispatch + follow-up response.
 
 Proposed architecture (TextViewport core):
 1. TextViewport (core)

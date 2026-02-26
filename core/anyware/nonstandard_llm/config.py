@@ -49,6 +49,11 @@ def load_config(config_path: str | None = None) -> LLMConfig:
     if not api_key:
         raise ValueError("api_key_file is empty")
 
+    raw_max_tokens = raw.get("max_tokens")
+    max_tokens = None if raw_max_tokens is None else int(raw_max_tokens)
+    if max_tokens is not None and max_tokens < 2048:
+        max_tokens = 2048
+
     return LLMConfig(
         provider=raw.get("provider", "deepseek"),
         api_key=api_key,
@@ -58,5 +63,5 @@ def load_config(config_path: str | None = None) -> LLMConfig:
         stream=bool(raw.get("stream", True)),
         temperature=raw.get("temperature"),
         top_p=raw.get("top_p"),
-        max_tokens=raw.get("max_tokens"),
+        max_tokens=max_tokens,
     )

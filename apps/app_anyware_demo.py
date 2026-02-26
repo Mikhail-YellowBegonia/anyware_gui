@@ -1,4 +1,6 @@
 import math
+from datetime import datetime
+from pathlib import Path
 
 import pygame
 
@@ -13,27 +15,70 @@ from core.anyware import (
     CheckboxMenu,
     DialGauge,
     Label,
+    LLMPage,
     MeterBar,
     Page,
     SegmentDisplay,
     ValueText,
     stable_component_id,
 )
+from core.anyware.nonstandard_llm.middleware.dispatcher import ToolDispatcher
+from core.anyware.nonstandard_llm.middleware.registry import ToolRegistry
+from core.anyware.nonstandard_llm.middleware.types import ToolResult, ToolSpec
+
+_PROMPTS_DIR = Path(__file__).resolve().parents[1] / "core" / "anyware" / "nonstandard_llm" / "prompts"
+
+
+def _read_prompt(name: str) -> str:
+    path = _PROMPTS_DIR / name
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8").strip()
+
+
+def _build_system_prompt() -> str:
+    parts = []
+    for name in ("system.txt", "tools_info.txt"):
+        content = _read_prompt(name)
+        if content:
+            parts.append(content)
+    return "\n\n".join(parts)
+
+
+def _build_tool_registry() -> ToolRegistry:
+    registry = ToolRegistry()
+
+    def _get_time(args: dict[str, object]) -> ToolResult:
+        fmt = args.get("format")
+        fmt_str = fmt if isinstance(fmt, str) and fmt else "%Y-%m-%d %H:%M:%S"
+        now = datetime.now().strftime(fmt_str)
+        return ToolResult.success(now, data={"timestamp": now})
+
+    registry.register(
+        ToolSpec(
+            name="get_time",
+            description="Return current local time.",
+            args_schema={"required": [], "properties": {"format": {"type": "string"}}},
+            handler=_get_time,
+        )
+    )
+    return registry
 
 
 class DemoArchivePage(Page):
-    def __init__(self, app: AnywareApp, gauges_page: "GaugesPage", dynamic_page: "DynamicPage"):
+    def __init__(self, app: AnywareApp, gauges_page: "GaugesPage", dynamic_page: "DynamicPage", llm_page: "LLMPage"):
         super().__init__("demo_archive")
         self._app = app
         self._gauges_page = gauges_page
         self._dynamic_page = dynamic_page
+        self._llm_page = llm_page
         self.channel = "anyware_demo.sim"
         self.selected = "NONE"
         self.value = 0.0
 
         self.add(Label(gx=2, gy=1, text="ANYWARE DEMO ARCHIVE", color="CRT_Cyan"))
         self.add(Label(gx=2, gy=2, text="TEMP SHOWCASE OF STABLE COMPONENTS", color="CRT_Cyan"))
-        self.add(Label(gx=2, gy=3, text="ARROWS:navigate  ENTER/SPACE:select  G:gauges  D:dynamic  ESC:quit", color="CRT_Cyan"))
+        self.add(Label(gx=2, gy=3, text="ARROWS:navigate  ENTER/SPACE:select  G:gauges  D:dynamic  L:llm  ESC:quit", color="CRT_Cyan"))
         self.add(ValueText(gx=2, gy=5, label="VALUE", value=lambda _: self.value, fmt="{:05.1f}", color="CRT_Cyan"))
         self.add(ValueText(gx=24, gy=5, label="SELECT", value=lambda _: self.selected, color="CRT_Cyan"))
         self.add(Label(gx=56, gy=8, text="VERT", color="CRT_Cyan", orientation="vertical", line_step=2))
@@ -159,6 +204,9 @@ class DemoArchivePage(Page):
             if event.key == pygame.K_d:
                 self._app.push_page(self._dynamic_page)
                 return True
+            if event.key == pygame.K_l:
+                self._app.push_page(self._llm_page)
+                return True
             if ctx.key_to_focus_direction(event.key) is not None:
                 ctx.move_focus_by_key(event.key)
                 return True
@@ -182,7 +230,7 @@ class GaugesPage(Page):
         self.current_value = 0.0
 
         self.add(Label(gx=2, gy=1, text="ANYWARE GAUGES", color="CRT_Cyan"))
-        self.add(Label(gx=2, gy=2, text="ARROWS:navigate  ENTER/SPACE:select  H:back  ESC:quit", color="CRT_Cyan"))
+        self.add(Label(gx=2, gy=2, text="ARROWS:navigate  ENTER/SPACE:select  CTRL+H:back  ESC:quit", color="CRT_Cyan"))
         self.add(Label(gx=34, gy=4, text=lambda c: f"FOCUS: {c.get_focus('none')}", color="CRT_Cyan"))
         self.add(Label(gx=34, gy=5, text=lambda _: f"SELECT: {self.selected_label}", color="CRT_Cyan"))
         self.add(Label(gx=6, gy=16, text=lambda _: f"{self.current_value:05.1f}", color="CRT_Cyan"))
@@ -297,7 +345,7 @@ class DynamicPage(Page):
         if self._mode == 0:
             return [
                 Label(label_id="dyn_title", gx=2, gy=1, text="DYNAMIC COMPONENTS (A)", color="CRT_Cyan"),
-                Label(label_id="dyn_hint", gx=2, gy=2, text="T:toggle  H:back  ESC:quit", color="CRT_Cyan"),
+                Label(label_id="dyn_hint", gx=2, gy=2, text="T:toggle  CTRL+H:back  ESC:quit", color="CRT_Cyan"),
                 Button(
                     "dyn_btn_a",
                     "BTN-A",
@@ -310,7 +358,7 @@ class DynamicPage(Page):
             ]
         return [
             Label(label_id="dyn_title", gx=2, gy=1, text="DYNAMIC COMPONENTS (B)", color="CRT_Cyan"),
-            Label(label_id="dyn_hint", gx=2, gy=2, text="T:toggle  H:back  ESC:quit", color="CRT_Cyan"),
+            Label(label_id="dyn_hint", gx=2, gy=2, text="T:toggle  CTRL+H:back  ESC:quit", color="CRT_Cyan"),
             Button(
                 stable_component_id("dyn_btn", seed="b"),
                 "BTN-B",
@@ -328,7 +376,7 @@ class DynamicPage(Page):
 
     def handle_event(self, event, ctx) -> bool:
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_h:
+            if event.key == pygame.K_h and event.mod & pygame.KMOD_CTRL: # ctrl+h = back
                 self._app.pop_page()
                 return True
             if event.key == pygame.K_t:
@@ -351,6 +399,16 @@ class DynamicPage(Page):
         ctx.draw_focus_frame("blink18", padding=2.0, thickness=1.2)
 
 
+
+
+def _simulate_response(text: str):
+    response = f"Echo: {text}"
+    chunk = 6
+    for idx in range(0, len(response), chunk):
+        yield response[idx : idx + chunk]
+
+
+
 def main():
     app = AnywareApp(
         title="Anyware Demo Archive",
@@ -361,18 +419,28 @@ def main():
             "window_noframe": False,
             "window_always_on_top": False,
             "window_bg_color_rgb": (8, 12, 14),
+            "cols": 120,
+            "rows": 40,
         },
         allow_raw_gui=False,
         min_gui_api_level=1,
     )
 
-    font_ascii = FONTS_DIR / "DEM-MO typeface" / "Mono" / "DEM-MOMono-300.otf"
-    font_cjk = FONTS_DIR / "wqy-zenhei" / "wqy-zenhei.ttc"
-    app.set_fonts(ascii_path=str(font_ascii), cjk_path=str(font_cjk), cell_w=8, cell_h=16, size_px=16)
+    font_main = FONTS_DIR / "长坂点宋16" / "长坂点宋16.ttf"
+    app.set_fonts(ascii_path=str(font_main), cjk_path=str(font_main), cell_w=8, cell_h=16, size_px=16)
 
     gauges = GaugesPage(app)
     dynamic = DynamicPage(app)
-    demo = DemoArchivePage(app, gauges, dynamic)
+    llm_page = LLMPage(
+        page_id="llm_chat",
+        viewport_rect=(2, 4, 116, 24),
+        input_rect=(2, 29, 116, 8),
+        system_prompt=_build_system_prompt,
+        dispatcher=ToolDispatcher(_build_tool_registry()),
+        simulate_response=_simulate_response,
+        on_back=app.pop_page,
+    )
+    demo = DemoArchivePage(app, gauges, dynamic, llm_page)
     app.set_root_page(demo)
     app.run()
 
