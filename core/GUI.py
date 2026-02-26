@@ -132,11 +132,9 @@ char_block_spacing_px = 1
 line_block_spacing_px = 1  
 border_padding_px = 10  
 PIXEL_SCALE = 1
-DPI_SCALE = 1.0
 window_noframe = True
 window_always_on_top = True
 window_bg_color_rgb = (10, 10, 10)
-WINDOW_SCALE = 1.0
 loading_animation = ['-', '\\', '|', '/']
 blk = chr(31)
 hol = chr(30)
@@ -155,11 +153,9 @@ DISPLAY_SYSTEM_DEFAULTS = {
     "line_block_spacing_px": line_block_spacing_px,
     "border_padding_px": border_padding_px,
     "pixel_scale": PIXEL_SCALE,
-    "dpi_scale": DPI_SCALE,
     "window_noframe": window_noframe,
     "window_always_on_top": window_always_on_top,
     "window_bg_color_rgb": window_bg_color_rgb,
-    "window_scale": WINDOW_SCALE,
 }
 DISPLAY_USER_DEFAULTS = dict(DISPLAY_SYSTEM_DEFAULTS)
 
@@ -316,16 +312,6 @@ def _sanitize_display_option(key, value):
         return max(0, int(value))
     if key == "pixel_scale":
         return max(1, int(value))
-    if key == "dpi_scale":
-        try:
-            return max(0.1, float(value))
-        except (TypeError, ValueError):
-            return DISPLAY_USER_DEFAULTS.get("dpi_scale", 1.0)
-    if key == "window_scale":
-        try:
-            return max(0.1, float(value))
-        except (TypeError, ValueError):
-            return DISPLAY_USER_DEFAULTS.get("window_scale", 1.0)
     if key in ("window_noframe", "window_always_on_top"):
         return bool(value)
     if key == "window_bg_color_rgb":
@@ -346,8 +332,8 @@ def _allocate_framebuffers():
 
 def _apply_display_defaults(rebuild_framebuffers=True):
     global fps, target_fps, char_resolution, row_column_resolution
-    global char_block_spacing_px, line_block_spacing_px, border_padding_px, PIXEL_SCALE, DPI_SCALE
-    global window_noframe, window_always_on_top, window_bg_color_rgb, WINDOW_SCALE
+    global char_block_spacing_px, line_block_spacing_px, border_padding_px, PIXEL_SCALE
+    global window_noframe, window_always_on_top, window_bg_color_rgb
 
     fps = _sanitize_display_option("fps", DISPLAY_USER_DEFAULTS["fps"])
     target_fps = _sanitize_display_option("target_fps", DISPLAY_USER_DEFAULTS["target_fps"])
@@ -361,11 +347,9 @@ def _apply_display_defaults(rebuild_framebuffers=True):
     line_block_spacing_px = _sanitize_display_option("line_block_spacing_px", DISPLAY_USER_DEFAULTS["line_block_spacing_px"])
     border_padding_px = _sanitize_display_option("border_padding_px", DISPLAY_USER_DEFAULTS["border_padding_px"])
     PIXEL_SCALE = _sanitize_display_option("pixel_scale", DISPLAY_USER_DEFAULTS["pixel_scale"])
-    DPI_SCALE = _sanitize_display_option("dpi_scale", DISPLAY_USER_DEFAULTS["dpi_scale"])
     window_noframe = _sanitize_display_option("window_noframe", DISPLAY_USER_DEFAULTS["window_noframe"])
     window_always_on_top = _sanitize_display_option("window_always_on_top", DISPLAY_USER_DEFAULTS["window_always_on_top"])
     window_bg_color_rgb = _sanitize_display_option("window_bg_color_rgb", DISPLAY_USER_DEFAULTS["window_bg_color_rgb"])
-    WINDOW_SCALE = _sanitize_display_option("window_scale", DISPLAY_USER_DEFAULTS["window_scale"])
 
     if rebuild_framebuffers:
         _allocate_framebuffers()
@@ -387,81 +371,13 @@ def reset_display_defaults():
     _apply_display_defaults(rebuild_framebuffers=True)
     return get_display_defaults()
 
-def get_dpi_scale():
-    return float(DPI_SCALE)
-
-def _effective_pixel_scale() -> float:
-    return float(PIXEL_SCALE) * float(DPI_SCALE)
-
-def _get_logical_render_size_px():
+def get_window_size_px():
     cols, rows = row_column_resolution
     ch_h, ch_w = char_resolution
     eff_w = (ch_w + char_block_spacing_px) * PIXEL_SCALE
     eff_h = (ch_h + line_block_spacing_px) * PIXEL_SCALE
     pad = border_padding_px * PIXEL_SCALE
-    width = pad * 2 + cols * eff_w
-    height = pad * 2 + rows * eff_h
-    return (int(round(width)), int(round(height)))
-
-def detect_display_dpi_scale(surface=None, *, default=1.0):
-    try:
-        surf = surface or pygame.display.get_surface()
-        if surf is None:
-            return float(default)
-        surf_w, surf_h = surf.get_size()
-        try:
-            win_w, win_h = pygame.display.get_window_size()
-        except Exception:
-            win_w, win_h = surf_w, surf_h
-        if win_w <= 0 or win_h <= 0:
-            return float(default)
-        dpr_w = float(surf_w) / float(win_w)
-        dpr_h = float(surf_h) / float(win_h)
-        dpr = (dpr_w + dpr_h) * 0.5
-        return max(0.1, float(dpr))
-    except Exception:
-        return float(default)
-
-def apply_display_dpi_from_surface(surface=None, *, default=1.0, epsilon=0.01):
-    dpr = detect_display_dpi_scale(surface, default=default)
-    if abs(float(dpr) - float(DPI_SCALE)) > float(epsilon):
-        set_display_defaults(dpi_scale=float(dpr))
-        return True
-    return False
-
-def init_pygame_display(*, title: str | None = None, extra_flags: int = 0, apply_dpi: bool = True):
-    screen_surf = pygame.display.set_mode(get_present_size_px(), get_window_flags(extra_flags))
-    if title is not None:
-        pygame.display.set_caption(str(title))
-    if apply_dpi:
-        apply_display_dpi_from_surface(screen_surf)
-    return screen_surf
-
-def get_render_size_px():
-    width, height = _get_logical_render_size_px()
-    scale = float(DPI_SCALE or 1.0)
-    return (
-        max(1, int(round(width * scale))),
-        max(1, int(round(height * scale))),
-    )
-
-def get_present_size_px():
-    render_w, render_h = _get_logical_render_size_px()
-    scale = float(WINDOW_SCALE or 1.0)
-    if scale == 1.0:
-        return (render_w, render_h)
-    return (max(1, int(round(render_w * scale))), max(1, int(round(render_h * scale))))
-
-def get_window_size_px():
-    return get_present_size_px()
-
-def get_present_surface_size_px():
-    present_w, present_h = get_present_size_px()
-    scale = float(DPI_SCALE or 1.0)
-    return (
-        max(1, int(round(present_w * scale))),
-        max(1, int(round(present_h * scale))),
-    )
+    return (int(pad * 2 + cols * eff_w), int(pad * 2 + rows * eff_h))
 
 def get_window_flags(extra_flags=0):
     flags = int(extra_flags or 0)
@@ -1152,46 +1068,40 @@ def _get_glyph_bitmap(ch, wide):
 # region coordinate system
 def grid_to_px(gx, gy, ox=0, oy=0):
     ch_h, ch_w = char_resolution
-    scale = _effective_pixel_scale()
-    px_size = max(1, int(round(scale)))
-    eff_w = (ch_w + char_block_spacing_px) * scale
-    eff_h = (ch_h + line_block_spacing_px) * scale
-    pad = border_padding_px * scale
-    px = pad + gx * eff_w - 0.5 * char_block_spacing_px * scale + ox * scale
-    py = pad + gy * eff_h - 0.5 * line_block_spacing_px * scale + oy * scale
+    eff_w = (ch_w + char_block_spacing_px) * PIXEL_SCALE
+    eff_h = (ch_h + line_block_spacing_px) * PIXEL_SCALE
+    pad = border_padding_px * PIXEL_SCALE
+    px = pad + gx * eff_w - 0.5 * char_block_spacing_px * PIXEL_SCALE + ox * PIXEL_SCALE
+    py = pad + gy * eff_h - 0.5 * line_block_spacing_px * PIXEL_SCALE + oy * PIXEL_SCALE
     return px, py
 
 def gx(grid_x: float) -> float:
     """Grid-aligned X in absolute (screen) pixels."""
     _, ch_w = char_resolution
-    scale = _effective_pixel_scale()
-    eff_w = (ch_w + char_block_spacing_px) * scale
-    pad = border_padding_px * scale
-    return pad + float(grid_x) * eff_w - 0.5 * char_block_spacing_px * scale
+    eff_w = (ch_w + char_block_spacing_px) * PIXEL_SCALE
+    pad = border_padding_px * PIXEL_SCALE
+    return pad + float(grid_x) * eff_w - 0.5 * char_block_spacing_px * PIXEL_SCALE
 
 def gy(grid_y: float) -> float:
     """Grid-aligned Y in absolute (screen) pixels."""
     ch_h, _ = char_resolution
-    scale = _effective_pixel_scale()
-    eff_h = (ch_h + line_block_spacing_px) * scale
-    pad = border_padding_px * scale
-    return pad + float(grid_y) * eff_h - 0.5 * line_block_spacing_px * scale
+    eff_h = (ch_h + line_block_spacing_px) * PIXEL_SCALE
+    pad = border_padding_px * PIXEL_SCALE
+    return pad + float(grid_y) * eff_h - 0.5 * line_block_spacing_px * PIXEL_SCALE
 
 def px(pixel_x: float) -> float:
     """Pixel X to grid-space X (inverse mapping of gx)."""
     _, ch_w = char_resolution
-    scale = _effective_pixel_scale()
-    eff_w = (ch_w + char_block_spacing_px) * scale
-    pad = border_padding_px * scale
-    return (float(pixel_x) - pad + 0.5 * char_block_spacing_px * scale) / eff_w
+    eff_w = (ch_w + char_block_spacing_px) * PIXEL_SCALE
+    pad = border_padding_px * PIXEL_SCALE
+    return (float(pixel_x) - pad + 0.5 * char_block_spacing_px * PIXEL_SCALE) / eff_w
 
 def py(pixel_y: float) -> float:
     """Pixel Y to grid-space Y (inverse mapping of gy)."""
     ch_h, _ = char_resolution
-    scale = _effective_pixel_scale()
-    eff_h = (ch_h + line_block_spacing_px) * scale
-    pad = border_padding_px * scale
-    return (float(pixel_y) - pad + 0.5 * line_block_spacing_px * scale) / eff_h
+    eff_h = (ch_h + line_block_spacing_px) * PIXEL_SCALE
+    pad = border_padding_px * PIXEL_SCALE
+    return (float(pixel_y) - pad + 0.5 * line_block_spacing_px * PIXEL_SCALE) / eff_h
 
 # endregion
 
@@ -1233,10 +1143,9 @@ def draw_to_surface(surface):
         pygame.draw.polygon(surface, get_color_rgb(c), v)
     cols, rows = row_column_resolution
     ch_h, ch_w = char_resolution
-    scale = _effective_pixel_scale()
-    eff_w = (ch_w + char_block_spacing_px) * scale
-    eff_h = (ch_h + line_block_spacing_px) * scale
-    pad = border_padding_px * scale
+    eff_w = (ch_w + char_block_spacing_px) * PIXEL_SCALE
+    eff_h = (ch_h + line_block_spacing_px) * PIXEL_SCALE
+    pad = border_padding_px * PIXEL_SCALE
     for r in range(rows):
         y_pos = pad + r * eff_h
         for c in range(cols):
@@ -1256,18 +1165,16 @@ def draw_to_surface(surface):
                 if lit_px.size == 0:
                     continue
                 for px in lit_px:
-                    px_x = int(round(x_pos + px * scale))
-                    px_y = int(round(y_pos + py * scale))
-                    surface.fill(rgb, (px_x, px_y, px_size, px_size))
+                    surface.fill(rgb, (x_pos + px * PIXEL_SCALE, y_pos + py * PIXEL_SCALE, PIXEL_SCALE, PIXEL_SCALE))
     for item in line_queue:
         x1, y1, x2, y2, c, t = item
-        thickness = max(1, int(round(float(t) * scale)))
+        thickness = max(1, int(round(float(t) * PIXEL_SCALE)))
         pygame.draw.line(surface, get_color_rgb(c), (x1, y1), (x2, y2), thickness)
     for item in super_text_queue:
         x_px, y_px, bmp, c_idx, scale = item
         rgb = get_color_rgb(c_idx)
         h, w = bmp.shape
-        px_scale = max(1, int(round(float(scale) * _effective_pixel_scale())))
+        px_scale = max(1, int(round(float(scale) * PIXEL_SCALE)))
         for py in range(h):
             lit_px = np.flatnonzero(bmp[py])
             if lit_px.size == 0:
@@ -1382,8 +1289,7 @@ def _poly_local_vertices_scaled(vertices_px, base_font_height_px: float):
     cur_h = float(char_resolution[0] or 1)
     base_h = float(base_font_height_px or 1)
     scale = cur_h / base_h if base_h != 0 else 1.0
-    render_scale = _effective_pixel_scale()
-    return [(x * scale * render_scale, y * scale * render_scale) for x, y in vertices_px]
+    return [(x * scale * PIXEL_SCALE, y * scale * PIXEL_SCALE) for x, y in vertices_px]
 
 def draw_poly(shape_or_vertices, color, x_px, y_px, *, filled=None, thickness=None, base_font_height_px: float | None = None):
     """Draw a polygon using the unified system.
@@ -1428,7 +1334,7 @@ def _design_px_to_render_px(value, base_font_height_px: float):
     cur_h = float(char_resolution[0] or 1)
     base_h = float(base_font_height_px or 1)
     scale = cur_h / base_h if base_h != 0 else 1.0
-    return float(value) * scale * _effective_pixel_scale()
+    return float(value) * scale * PIXEL_SCALE
 
 def _design_px_to_thickness_units(value, base_font_height_px: float):
     cur_h = float(char_resolution[0] or 1)
@@ -1794,9 +1700,8 @@ def _measure_super_text_px(text, cell_w, cell_h, *, scale=1, line_step=1):
     if not lines:
         return (0, 0)
     step = max(1, int(line_step))
-    pixel_scale = _effective_pixel_scale()
-    cell_w_px = int(round(cell_w * pixel_scale * scale))
-    cell_h_px = int(round(cell_h * pixel_scale * scale))
+    cell_w_px = int(cell_w * PIXEL_SCALE * scale)
+    cell_h_px = int(cell_h * PIXEL_SCALE * scale)
     widths = []
     for line in lines:
         width_cells = _measure_line_cells(line)
@@ -1820,7 +1725,7 @@ def draw_super_text_px(
     box_h_px=None,
     line_step=1,
 ):
-    """Draw super-grid text in absolute pixel coordinates (post-PIXEL_SCALE + DPI scale)."""
+    """Draw super-grid text in absolute pixel coordinates (post-PIXEL_SCALE space)."""
     if text is None:
         return False
     text = text if isinstance(text, str) else str(text)
@@ -1843,9 +1748,8 @@ def draw_super_text_px(
         y_px = _align_start(y_px, int(box_h_px), text_h_px, align_v)
     c_idx = _resolve_color(color)
     step = max(1, int(line_step))
-    pixel_scale = _effective_pixel_scale()
-    cell_w_px = int(round(cell_w * pixel_scale * scale))
-    cell_h_px = int(round(cell_h * pixel_scale * scale))
+    cell_w_px = int(cell_w * PIXEL_SCALE * scale)
+    cell_h_px = int(cell_h * PIXEL_SCALE * scale)
     lines = _split_text_lines(text)
     if box_w_px is not None:
         max_cells = int(int(box_w_px) // max(1, cell_w_px))
@@ -1913,15 +1817,8 @@ STABLE_API = (
     "set_layout_mode",
     "get_layout_mode",
     "get_layout_mode_colors",
-    "get_render_size_px",
-    "get_present_size_px",
-    "get_present_surface_size_px",
     "get_window_size_px",
     "get_window_flags",
-    "get_dpi_scale",
-    "detect_display_dpi_scale",
-    "apply_display_dpi_from_surface",
-    "init_pygame_display",
     "set_fonts",
     "set_font",
     "next_frame",
@@ -2040,8 +1937,6 @@ __all__ = (
     "line_block_spacing_px",
     "border_padding_px",
     "PIXEL_SCALE",
-    "DPI_SCALE",
-    "WINDOW_SCALE",
     "window_noframe",
     "window_always_on_top",
     "window_bg_color_rgb",

@@ -44,7 +44,6 @@ class AnywareApp:
         self._present_to_screen = self.output_mode == "pygame"
         self._use_offscreen = (self.output_mode != "pygame") or (self.frame_exporter is not None)
         self._display_warning_emitted = False
-        self._present_scaled = False
 
         self._init_render_surfaces(title=title)
 
@@ -55,21 +54,14 @@ class AnywareApp:
         self._last_logic_time = time.time()
 
     def _init_render_surfaces(self, *, title: str | None = None) -> None:
-        present_size = GUI.get_present_size_px()
-        self.screen_surf = pygame.display.set_mode(present_size, GUI.get_window_flags())
-        GUI.apply_display_dpi_from_surface(self.screen_surf)
-        render_size = GUI.get_render_size_px()
-        screen_size = self.screen_surf.get_size()
-        self._present_scaled = screen_size != render_size
-        if self._present_scaled:
-            self._use_offscreen = True
+        self.screen_surf = pygame.display.set_mode(GUI.get_window_size_px(), GUI.get_window_flags())
         use_title = self._title if title is None else title
         if use_title is not None:
             pygame.display.set_caption(use_title)
         if GUI.window_always_on_top:
             GUI._set_window_always_on_top(True)
         self._display_surface_id = id(self.screen_surf)
-        self.offscreen_surf = pygame.Surface(render_size) if self._use_offscreen else None
+        self.offscreen_surf = pygame.Surface(GUI.get_window_size_px()) if self._use_offscreen else None
         self._render_surf = self.offscreen_surf if self.offscreen_surf is not None else self.screen_surf
 
     def _refresh_display_surface_if_needed(self) -> None:
@@ -79,20 +71,11 @@ class AnywareApp:
         if current is None:
             self._init_render_surfaces()
             return
-        GUI.apply_display_dpi_from_surface(current)
-        expected_size = GUI.get_present_surface_size_px()
-        if current.get_size() != expected_size:
-            self._init_render_surfaces()
-            return
         if current is not self.screen_surf:
             self.screen_surf = current
-        self._present_scaled = current.get_size() != GUI.get_render_size_px()
-        if self._present_scaled:
-            self._use_offscreen = True
         if self._use_offscreen:
-            render_size = GUI.get_render_size_px()
-            if self.offscreen_surf is None or self.offscreen_surf.get_size() != render_size:
-                self.offscreen_surf = pygame.Surface(render_size)
+            if self.offscreen_surf is None or self.offscreen_surf.get_size() != current.get_size():
+                self.offscreen_surf = pygame.Surface(current.get_size())
             self._render_surf = self.offscreen_surf
         else:
             self._render_surf = self.screen_surf
@@ -184,14 +167,7 @@ class AnywareApp:
                 if self.frame_exporter is not None:
                     self.frame_exporter(self._render_surf, self.ctx)
                 if self._present_to_screen and self.offscreen_surf is not None:
-                    if self._present_scaled:
-                        pygame.transform.scale(
-                            self.offscreen_surf,
-                            self.screen_surf.get_size(),
-                            self.screen_surf,
-                        )
-                    else:
-                        self.screen_surf.blit(self.offscreen_surf, (0, 0))
+                    self.screen_surf.blit(self.offscreen_surf, (0, 0))
                 self._last_logic_time = now
 
             if self._present_to_screen:

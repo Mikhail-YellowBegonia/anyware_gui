@@ -57,10 +57,7 @@ Quick mapping:
 Scaling notes:
 - Poly vertices are in design pixels and scale by `current_font_height / base_font_height_px`.
 - `PIXEL_SCALE` applies to final render pixels.
-- `dpi_scale` applies a device pixel ratio (e.g., Retina 2.0) without changing logical layout.
 - `window_scale` scales the presented window size without changing render resolution.
-  - `get_present_size_px()` returns logical window size.
-  - `get_present_surface_size_px()` returns expected device-pixel size after DPI.
 
 ## 4) Minimal Frame Loop (pygame presenter)
 Goal: draw a text title and one rectangle.
@@ -159,9 +156,7 @@ Engine contract and versioning:
 
 Display and window:
 `set_display_defaults(...)`, `reset_display_defaults()`, `get_display_defaults()`, `get_render_size_px()`,
-`get_present_size_px()`, `get_present_surface_size_px()`, `get_window_size_px()`, `get_window_flags(...)`,
-`get_dpi_scale()`, `detect_display_dpi_scale(...)`, `apply_display_dpi_from_surface(...)`, `init_pygame_display(...)`,
-`next_frame(...)`, `begin_frame(...)`,
+`get_present_size_px()`, `get_window_size_px()`, `get_window_flags(...)`, `next_frame(...)`, `begin_frame(...)`,
 `finish_frame(...)`, `GuiRuntime`, `create_runtime(...)`
 
 Text and cell:

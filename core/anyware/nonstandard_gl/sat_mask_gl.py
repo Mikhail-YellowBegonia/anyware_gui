@@ -669,9 +669,7 @@ def main() -> None:
         last_time = now
 
         sat.update(dt)
-        surf = pygame.display.get_surface()
-        render_w, render_h = surf.get_size() if surf is not None else (window_w, window_h)
-        sat.render(render_w, render_h)
+        sat.render(window_w, window_h)
 
         pygame.display.flip()
         clock.tick(APP_CONFIG["target_fps"])
