@@ -4,6 +4,7 @@ import json
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlencode
 from urllib.parse import urlparse
 
 
@@ -43,6 +44,28 @@ class ReactorClient:
             data = resp.read().decode("utf-8", errors="replace")
         return json.loads(data)
 
+    def _post_json(self, path: str, payload: dict | None = None) -> dict:
+        url = f"{self.base_url}{path}"
+        body = json.dumps(payload or {}, ensure_ascii=False).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=body,
+            method="POST",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
+            data = resp.read().decode("utf-8", errors="replace")
+        return json.loads(data)
+
+    def _record_success(self, payload: dict, start: float) -> None:
+        self._last_latency_ms = (time.perf_counter() - start) * 1000.0
+        self._last_success = time.time()
+        self._last_error = None
+        self._last_payload = payload
+
     def poll_state(self) -> dict | None:
         now = time.time()
         if now - self._last_poll < self.poll_interval_s:
@@ -50,20 +73,94 @@ class ReactorClient:
         self._last_poll = now
         start = time.perf_counter()
         payload = self._get_json("/state")
-        self._last_latency_ms = (time.perf_counter() - start) * 1000.0
-        self._last_success = time.time()
-        self._last_error = None
-        self._last_payload = payload
+        self._record_success(payload, start)
         return payload
+
+    def fetch_state(self) -> dict | None:
+        try:
+            start = time.perf_counter()
+            payload = self._get_json("/state")
+            self._record_success(payload, start)
+            return payload
+        except Exception as exc:
+            self.mark_error(exc)
+            return None
+
+    def fetch_history(self, limit: int = 80) -> dict | None:
+        try:
+            qs = urlencode({"limit": max(1, min(int(limit), 240))})
+            start = time.perf_counter()
+            payload = self._get_json(f"/history?{qs}")
+            self._record_success(payload, start)
+            return payload
+        except Exception as exc:
+            self.mark_error(exc)
+            return None
+
+    def fetch_metrics(self) -> dict | None:
+        try:
+            start = time.perf_counter()
+            payload = self._get_json("/metrics")
+            self._record_success(payload, start)
+            return payload
+        except Exception as exc:
+            self.mark_error(exc)
+            return None
+
+    def fetch_catalog(self) -> dict | None:
+        try:
+            start = time.perf_counter()
+            payload = self._get_json("/catalog")
+            self._record_success(payload, start)
+            return payload
+        except Exception as exc:
+            self.mark_error(exc)
+            return None
+
+    def fetch_events(self, limit: int = 40, severity: str | None = None) -> dict | None:
+        try:
+            query: dict[str, str | int] = {"limit": max(1, min(int(limit), 200))}
+            if severity:
+                query["severity"] = severity
+            qs = urlencode(query)
+            start = time.perf_counter()
+            payload = self._get_json(f"/events?{qs}")
+            self._record_success(payload, start)
+            return payload
+        except Exception as exc:
+            self.mark_error(exc)
+            return None
+
+    def post_control(self, payload: dict) -> dict | None:
+        return self._post_wrapper("/control", payload)
+
+    def post_scenario(self, name: str) -> dict | None:
+        return self._post_wrapper("/scenario", {"name": name})
+
+    def post_fault(self, name: str, enabled: bool = True) -> dict | None:
+        return self._post_wrapper("/fault", {"name": name, "enabled": enabled})
+
+    def post_action(self, name: str) -> dict | None:
+        return self._post_wrapper("/action", {"name": name})
+
+    def post_sim(self, payload: dict) -> dict | None:
+        return self._post_wrapper("/sim", payload)
+
+    def _post_wrapper(self, path: str, payload: dict) -> dict | None:
+        try:
+            start = time.perf_counter()
+            result = self._post_json(path, payload)
+            self._record_success(result, start)
+            return result
+        except Exception as exc:
+            self.mark_error(exc)
+            return None
 
     def health_check(self) -> bool:
         try:
             start = time.perf_counter()
             payload = self._get_json("/health")
-            self._last_latency_ms = (time.perf_counter() - start) * 1000.0
-            self._last_success = time.time()
-            self._last_error = None
-            self._last_payload = payload
+            self._record_success(payload, start)
             return bool(payload.get("ok", True))
         except Exception as exc:
             self.mark_error(exc)

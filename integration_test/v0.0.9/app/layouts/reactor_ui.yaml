@@ -1,6 +1,6 @@
 globals:
   layout_mode: false
-  focus_scope: nav
+  focus_scope: main
   palette:
     bg_hex: "#fdf6f0"
     default_hex: "#586e75"
@@ -20,32 +20,22 @@ styles:
     color: Solar_Default
     label_align_h: center
     label_align_v: center
-    label_line_step: 1
   nav_button_active:
     color: Solar_Special
     label_align_h: center
     label_align_v: center
-    label_line_step: 1
-  footer_block:
+  btn:
     color: Solar_Default
-    filled: true
-  footer_block_active:
+    label_align_h: center
+    label_align_v: center
+  btn_active:
     color: Solar_Special
-    filled: true
-  comms:
-    color: Solar_Special
-    filled: true
-  demo_button_fill:
-    color: Solar_Default
-    filled: true
-  demo_button_border:
-    color: Solar_Default
-    line_color: Solar_Default
-    thickness: 2
+    label_align_h: center
+    label_align_v: center
 
 pages:
   status:
-    focus_scope: nav
+    focus_scope: main
     groups:
       - id: nav
         rect: [0, 0, 128, 4]
@@ -54,58 +44,39 @@ pages:
             type: rect
             rect: [0, 0, 128, 4]
             style: default
-            thickness: 1
           - id: nav_status
             type: button
-            rect: [1.8, 0.8, 15.4, 2.4]
-            label: "状态指示"
+            rect: [1, 0.7, 14, 2.4]
+            label: "状态"
             style: nav_button_active
-            scope: nav
-            nav: { right: nav_diagram }
             on_click: go_page.status
           - id: nav_diagram
             type: button
-            rect: [17.8, 0.8, 15.4, 2.4]
-            label: "形式图"
+            rect: [16, 0.7, 14, 2.4]
+            label: "趋势"
             style: nav_button
-            scope: nav
-            nav: { left: nav_status, right: nav_control }
             on_click: go_page.diagram
           - id: nav_control
             type: button
-            rect: [33.8, 0.8, 15.4, 2.4]
-            label: "控制面板"
+            rect: [31, 0.7, 14, 2.4]
+            label: "控制"
             style: nav_button
-            scope: nav
-            nav: { left: nav_diagram, right: nav_core }
             on_click: go_page.control
           - id: nav_core
             type: button
-            rect: [49.8, 0.8, 15.4, 2.4]
-            label: "堆芯"
+            rect: [46, 0.7, 14, 2.4]
+            label: "故障"
             style: nav_button
-            scope: nav
-            nav: { left: nav_control }
             on_click: go_page.core
-          - id: logo_poly
-            type: poly
-            gx: 88
-            gy: 0
-            vertices_px:
-              - [0, 0]
-              - [56, 0]
-              - [64, 10]
-              - [8, 10]
-            style: default
-            thickness: 1
-          - id: net_indicator
-            type: rect
-            rect: [97, 1, 30, 2]
-            style: default
-            thickness: 2
+          - id: nav_title
+            type: text
+            rect: [62, 1, 34, 2]
+            text: "Reactor Prototype v0.0.9"
+            align_h: left
+            align_v: center
           - id: comms_indicator
             type: rect
-            rect: [97, 2, 10, 1]
+            rect: [97, 1, 10, 2]
             style: default
             bind_style:
               color: net.comms_color
@@ -113,22 +84,19 @@ pages:
               filled: net.comms_on
           - id: comms_text
             type: text
-            rect: [97, 2, 10, 1]
+            rect: [97, 1, 10, 2]
             text: "COMMS"
             align_h: center
             align_v: center
-          - id: net_info_box
-            type: rect
-            rect: [107, 1, 20, 2]
-            style: default
           - id: net_info_text
             type: text
-            rect: [108, 1, 18, 2]
-            text: "PORT --\nLATENCY --ms"
+            rect: [108, 1, 19, 2]
             bind: net.info
+            text: "PORT --\nLAT --"
             align_h: left
             align_v: center
             line_step: 1
+
       - id: body
         rect: [0, 4, 128, 41]
         elements:
@@ -136,12 +104,147 @@ pages:
             type: rect
             rect: [0, 0, 128, 41]
             style: panel
-          - id: status_placeholder
+
+          - id: status_metrics_box
+            type: rect
+            rect: [1, 1, 41, 20]
+            style: default
+          - id: status_metrics_text
             type: text
-            rect: [4, 4, 32, 2]
-            text: "STATUS PAGE (TODO)"
+            rect: [2, 2, 39, 18]
+            bind: status.metrics_block
+            text: "--"
+            align_h: left
+            align_v: top
+            line_step: 1
+
+          - id: status_mission_box
+            type: rect
+            rect: [43, 1, 42, 20]
+            style: default
+          - id: status_mission_text
+            type: text
+            rect: [44, 2, 40, 18]
+            bind: status.mission_block
+            text: "--"
+            align_h: left
+            align_v: top
+            line_step: 1
+
+          - id: status_alarm_box
+            type: rect
+            rect: [86, 1, 41, 20]
+            style: default
+          - id: status_alarm_text
+            type: text
+            rect: [87, 2, 39, 18]
+            bind: status.alarm_block
+            text: "--"
+            align_h: left
+            align_v: top
+            line_step: 1
+
+          - id: action_panel_box
+            type: rect
+            rect: [1, 22, 126, 18]
+            style: default
+          - id: action_panel_title
+            type: text
+            rect: [3, 23, 26, 1]
+            text: "Operator Actions"
             align_h: left
             align_v: center
+
+          - id: btn_ack
+            type: button
+            rect: [3, 26, 18, 2]
+            label: "Ack Alarms"
+            style: btn
+            on_click: action.run
+            name: ack_alarms
+          - id: btn_quick
+            type: button
+            rect: [23, 26, 18, 2]
+            label: "Quick Start"
+            style: btn
+            on_click: action.run
+            name: quick_start
+          - id: btn_stabilize
+            type: button
+            rect: [43, 26, 18, 2]
+            label: "Stabilize"
+            style: btn
+            on_click: action.run
+            name: stabilize
+          - id: btn_clear_scram
+            type: button
+            rect: [63, 26, 18, 2]
+            label: "Clear SCRAM"
+            style: btn_active
+            on_click: action.run
+            name: clear_scram
+
+          - id: status_result_label
+            type: text
+            rect: [3, 30, 16, 1]
+            text: "Last Result:"
+            align_h: left
+            align_v: center
+          - id: status_result_text
+            type: text
+            rect: [3, 31, 78, 7]
+            bind: status.last_result
+            text: "READY"
+            align_h: left
+            align_v: top
+            line_step: 1
+
+          - id: status_visual_title
+            type: text
+            rect: [83, 23, 20, 1]
+            text: "Visual Bars"
+            align_h: left
+            align_v: center
+          - id: status_label_power
+            type: text
+            rect: [83, 24, 8, 1]
+            text: "PWR"
+            align_h: left
+            align_v: center
+          - id: status_label_temp
+            type: text
+            rect: [83, 26, 8, 1]
+            text: "TEMP"
+            align_h: left
+            align_v: center
+          - id: status_label_press
+            type: text
+            rect: [83, 28, 8, 1]
+            text: "PRES"
+            align_h: left
+            align_v: center
+          - id: status_label_flow
+            type: text
+            rect: [83, 30, 8, 1]
+            text: "FLOW"
+            align_h: left
+            align_v: center
+          - id: status_slot_power
+            type: slot
+            rect: [91, 24, 34, 1]
+          - id: status_slot_temp
+            type: slot
+            rect: [91, 26, 34, 1]
+          - id: status_slot_press
+            type: slot
+            rect: [91, 28, 34, 1]
+          - id: status_slot_flow
+            type: slot
+            rect: [91, 30, 34, 1]
+          - id: status_slot_stability
+            type: slot
+            rect: [84, 31.5, 10, 7]
+
       - id: footer
         rect: [0, 45, 128, 3]
         elements:
@@ -149,43 +252,16 @@ pages:
             type: rect
             rect: [0, 0, 128, 3]
             style: default
-            z_index: 0
-          - id: footer_block_1
-            type: rect
-            rect: [2, 1, 12, 1]
-            style: footer_block
-            z_index: 1
-          - id: footer_block_2
-            type: rect
-            rect: [16, 1, 12, 1]
-            style: footer_block_active
-            z_index: 1
-          - id: footer_block_3
-            type: rect
-            rect: [120, 1, 6, 1]
-            style: footer_block
-            z_index: 1
-          - id: footer_text_1
+          - id: footer_info_text
             type: text
-            rect: [30, 1, 20, 1]
-            text: "谷雨计划"
-            text_color: Solar_Special
+            rect: [2, 1, 124, 1]
+            bind: footer.info
+            text: "STATUS --"
             align_h: left
             align_v: center
-            z_index: 2
-          - id: footer_text_2
-            type: text
-            rect: [103, 1, 20, 1]
-            text: "Project Koyuu"
-            text_color: Solar_Default
-            align_h: left
-            align_v: center
-            z_index: 2
 
   diagram:
-    focus_scope: nav
-    components:
-      demo_fill_gauge: false
+    focus_scope: main
     groups:
       - id: nav
         rect: [0, 0, 128, 4]
@@ -194,92 +270,59 @@ pages:
             type: rect
             rect: [0, 0, 128, 4]
             style: default
-            thickness: 1
-            z_index: 0
           - id: nav_status
             type: button
-            rect: [1.8, 0.8, 15.4, 2.4]
-            label: "状态指示"
+            rect: [1, 0.7, 14, 2.4]
+            label: "状态"
             style: nav_button
-            scope: nav
-            nav: { right: nav_diagram }
             on_click: go_page.status
-            z_index: 1
           - id: nav_diagram
             type: button
-            rect: [17.8, 0.8, 15.4, 2.4]
-            label: "形式图"
+            rect: [16, 0.7, 14, 2.4]
+            label: "趋势"
             style: nav_button_active
-            scope: nav
-            nav: { left: nav_status, right: nav_control, down: demo_button }
             on_click: go_page.diagram
-            z_index: 1
           - id: nav_control
             type: button
-            rect: [33.8, 0.8, 15.4, 2.4]
-            label: "控制面板"
+            rect: [31, 0.7, 14, 2.4]
+            label: "控制"
             style: nav_button
-            scope: nav
-            nav: { left: nav_diagram, right: nav_core }
             on_click: go_page.control
-            z_index: 1
           - id: nav_core
             type: button
-            rect: [49.8, 0.8, 15.4, 2.4]
-            label: "堆芯"
+            rect: [46, 0.7, 14, 2.4]
+            label: "故障"
             style: nav_button
-            scope: nav
-            nav: { left: nav_control }
             on_click: go_page.core
-            z_index: 1
-          - id: logo_poly
-            type: poly
-            gx: 88
-            gy: 0
-            vertices_px:
-              - [0, 0]
-              - [56, 0]
-              - [64, 10]
-              - [8, 10]
-            style: default
-            thickness: 1
-            z_index: 1
-          - id: net_indicator
-            type: rect
-            rect: [97, 1, 30, 2]
-            style: default
-            thickness: 2
-            z_index: 1
+          - id: nav_title
+            type: text
+            rect: [62, 1, 34, 2]
+            text: "Trend / Event"
+            align_h: left
+            align_v: center
           - id: comms_indicator
             type: rect
-            rect: [97, 2, 10, 1]
+            rect: [97, 1, 10, 2]
             style: default
             bind_style:
               color: net.comms_color
               line_color: net.comms_color
               filled: net.comms_on
-            z_index: 1
           - id: comms_text
             type: text
-            rect: [97, 2, 10, 1]
+            rect: [97, 1, 10, 2]
             text: "COMMS"
             align_h: center
             align_v: center
-            z_index: 2
-          - id: net_info_box
-            type: rect
-            rect: [107, 1, 20, 2]
-            style: default
-            z_index: 1
           - id: net_info_text
             type: text
-            rect: [108, 1, 18, 2]
-            text: "PORT --\nLATENCY --ms"
+            rect: [108, 1, 19, 2]
             bind: net.info
+            text: "PORT --\nLAT --"
             align_h: left
             align_v: center
             line_step: 1
-            z_index: 2
+
       - id: body
         rect: [0, 4, 128, 41]
         elements:
@@ -287,206 +330,33 @@ pages:
             type: rect
             rect: [0, 0, 128, 41]
             style: panel
-            z_index: 0
-          - id: diagram_arrow_1
-            type: arrow
-            start_gx: 104
-            start_gy: 23
-            end_gx: 94
-            end_gy: 23
-            z_index: 1
-          - id: diagram_arrow_2
-            type: arrow
-            start_gx: 94
-            start_gy: 31
-            end_gx: 104
-            end_gy: 31
-            z_index: 1
-          - id: diagram_arrow_3
-            type: arrow
-            start_gx: 76
-            start_gy: 23
-            end_gx: 66
-            end_gy: 23
-            z_index: 1
-          - id: diagram_arrow_4
-            type: arrow
-            start_gx: 57
-            start_gy: 26
-            end_gx: 57
-            end_gy: 26
-            z_index: 1
-          - id: diagram_arrow_5
-            type: arrow
-            start_gx: 38
-            start_gy: 31
-            end_gx: 76
-            end_gy: 31
-            z_index: 1
-          - id: diagram_arrow_6
-            type: arrow
-            start_gx: 48
-            start_gy: 23
-            end_gx: 38
-            end_gy: 23
-            z_index: 1
-          - id: diagram_arrow_7
-            type: arrow
-            start_gx: 48
-            start_gy: 30
-            end_gx: 38
-            end_gy: 30
-            z_index: 1
-          - id: diagram_box_core
+
+          - id: trend_history_box
             type: rect
-            rect: [104, 16, 18, 14]
+            rect: [1, 1, 86, 39]
             style: default
-            z_index: 2
-          - id: diagram_box_steam
+          - id: trend_history_text
+            type: text
+            rect: [2, 2, 84, 37]
+            bind: trend.history_block
+            text: "--"
+            align_h: left
+            align_v: top
+            line_step: 1
+
+          - id: trend_events_box
             type: rect
-            rect: [76, 16, 18, 14]
+            rect: [88, 1, 39, 39]
             style: default
-            z_index: 2
-          - id: diagram_box_turbine_high
-            type: rect
-            rect: [48, 16, 18, 6]
-            style: default
-            z_index: 2
-          - id: diagram_box_turbine_low
-            type: rect
-            rect: [48, 24, 18, 6]
-            style: default
-            z_index: 2
-          - id: diagram_box_electrics
-            type: rect
-            rect: [6, 16, 32, 6]
-            style: default
-            z_index: 2
-          - id: diagram_box_condenser
-            type: rect
-            rect: [6, 24, 32, 6]
-            style: default
-            z_index: 2
-          - id: diagram_label_core
+          - id: trend_events_text
             type: text
-            rect: [104, 16, 18, 14]
-            text: "Core"
-            align_h: center
-            align_v: center
-            z_index: 3
-          - id: diagram_label_steam
-            type: text
-            rect: [76, 16, 18, 14]
-            text: "Steam Generator"
-            align_h: center
-            align_v: center
-            z_index: 3
-          - id: diagram_label_turbine_high
-            type: text
-            rect: [48, 16, 18, 6]
-            text: "High Turbine"
-            align_h: center
-            align_v: center
-            z_index: 3
-          - id: diagram_label_turbine_low
-            type: text
-            rect: [48, 24, 18, 6]
-            text: "Low Turbine"
-            align_h: center
-            align_v: center
-            z_index: 3
-          - id: diagram_label_electrics
-            type: text
-            rect: [6, 16, 32, 6]
-            text: "Electrics"
-            align_h: center
-            align_v: center
-            z_index: 3
-          - id: diagram_label_condenser
-            type: text
-            rect: [6, 24, 32, 6]
-            text: "Condenser"
-            align_h: center
-            align_v: center
-            z_index: 3
-        groups:
-          - id: demo_complex_button
-            rect: [6, 6, 30, 8]
-            interaction:
-              type: button
-              id: demo_button
-              scope: nav
-              nav: { up: nav_diagram }
-              on_click: go_page.diagram
-            elements:
-              - id: demo_btn_bg
-                type: rect
-                rect: [0, 0, 28, 3]
-                style: demo_button_fill
-                state_styles:
-                  hover: { color: Solar_Special, filled: true }
-                  active: { color: Solar_Special, filled: true }
-                z_index: 1
-              - id: demo_btn_border
-                type: rect
-                rect: [0, 0, 28, 3]
-                style: demo_button_border
-                filled: false
-                state_styles:
-                  hover: { color: Solar_Special, line_color: Solar_Special }
-                  active: { color: Solar_Special, line_color: Solar_Special }
-                z_index: 2
-              - id: demo_btn_text_left
-                type: text
-                rect: [1, 0, 8, 3]
-                text: "- Menu"
-                text_color: Solar_Special
-                align_h: left
-                align_v: center
-                z_index: 3
-              - id: demo_btn_text_center
-                type: text
-                rect: [9, 0, 10, 3]
-                text: "S a v E"
-                text_color: Solar_Default
-                align_h: center
-                align_v: center
-                z_index: 3
-              - id: demo_btn_text_right
-                type: text
-                rect: [19, 0, 9, 3]
-                text: "保存"
-                text_color: Solar_Special
-                align_h: right
-                align_v: center
-                z_index: 3
-          - id: demo_rotated_text
-            rect: [42, 8, 36, 3]
-            elements:
-              - id: demo_rotated_text_label
-                type: text
-                rect: [0, 0, 36, 1]
-                text: "ROTATED TEXT (TODO)"
-                align_h: left
-                align_v: center
-                z_index: 2
-              - id: demo_rotated_text_note
-                type: text
-                rect: [0, 1, 36, 1]
-                text: "Needs arbitrary angle support"
-                align_h: left
-                align_v: center
-                z_index: 2
-        #  - id: demo_fill_gauge_label
-        #    rect: [18, 36, 20, 2]
-        #    elements:
-        #      - id: demo_gauge_text
-        #        type: text
-        #        rect: [0, 0, 20, 1]
-        #        text: "FILL GAUGE"
-        #        align_h: left
-        #        align_v: center
-        #        z_index: 2
+            rect: [89, 2, 37, 37]
+            bind: trend.events_block
+            text: "--"
+            align_h: left
+            align_v: top
+            line_step: 1
+
       - id: footer
         rect: [0, 45, 128, 3]
         elements:
@@ -494,35 +364,16 @@ pages:
             type: rect
             rect: [0, 0, 128, 3]
             style: default
-          - id: footer_block_1
-            type: rect
-            rect: [2, 1, 12, 1]
-            style: footer_block
-          - id: footer_block_2
-            type: rect
-            rect: [16, 1, 12, 1]
-            style: footer_block_active
-          - id: footer_block_3
-            type: rect
-            rect: [120, 1, 6, 1]
-            style: footer_block
-          - id: footer_text_1
+          - id: footer_info_text
             type: text
-            rect: [30, 1, 20, 1]
-            text: "谷雨计划"
-            text_color: Solar_Special
-            align_h: left
-            align_v: center
-          - id: footer_text_2
-            type: text
-            rect: [103, 1, 20, 1]
-            text: "Project Koyuu"
-            text_color: Solar_Default
+            rect: [2, 1, 124, 1]
+            bind: footer.info
+            text: "STATUS --"
             align_h: left
             align_v: center
 
   control:
-    focus_scope: nav
+    focus_scope: main
     groups:
       - id: nav
         rect: [0, 0, 128, 4]
@@ -531,58 +382,39 @@ pages:
             type: rect
             rect: [0, 0, 128, 4]
             style: default
-            thickness: 1
           - id: nav_status
             type: button
-            rect: [1.8, 0.8, 15.4, 2.4]
-            label: "状态指示"
+            rect: [1, 0.7, 14, 2.4]
+            label: "状态"
             style: nav_button
-            scope: nav
-            nav: { right: nav_diagram }
             on_click: go_page.status
           - id: nav_diagram
             type: button
-            rect: [17.8, 0.8, 15.4, 2.4]
-            label: "形式图"
+            rect: [16, 0.7, 14, 2.4]
+            label: "趋势"
             style: nav_button
-            scope: nav
-            nav: { left: nav_status, right: nav_control }
             on_click: go_page.diagram
           - id: nav_control
             type: button
-            rect: [33.8, 0.8, 15.4, 2.4]
-            label: "控制面板"
+            rect: [31, 0.7, 14, 2.4]
+            label: "控制"
             style: nav_button_active
-            scope: nav
-            nav: { left: nav_diagram, right: nav_core }
             on_click: go_page.control
           - id: nav_core
             type: button
-            rect: [49.8, 0.8, 15.4, 2.4]
-            label: "堆芯"
+            rect: [46, 0.7, 14, 2.4]
+            label: "故障"
             style: nav_button
-            scope: nav
-            nav: { left: nav_control }
             on_click: go_page.core
-          - id: logo_poly
-            type: poly
-            gx: 88
-            gy: 0
-            vertices_px:
-              - [0, 0]
-              - [56, 0]
-              - [64, 10]
-              - [8, 10]
-            style: default
-            thickness: 1
-          - id: net_indicator
-            type: rect
-            rect: [97, 1, 30, 2]
-            style: default
-            thickness: 2
+          - id: nav_title
+            type: text
+            rect: [62, 1, 34, 2]
+            text: "Control Panel"
+            align_h: left
+            align_v: center
           - id: comms_indicator
             type: rect
-            rect: [97, 2, 10, 1]
+            rect: [97, 1, 10, 2]
             style: default
             bind_style:
               color: net.comms_color
@@ -590,22 +422,19 @@ pages:
               filled: net.comms_on
           - id: comms_text
             type: text
-            rect: [97, 2, 10, 1]
+            rect: [97, 1, 10, 2]
             text: "COMMS"
             align_h: center
             align_v: center
-          - id: net_info_box
-            type: rect
-            rect: [107, 1, 20, 2]
-            style: default
           - id: net_info_text
             type: text
-            rect: [108, 1, 18, 2]
-            text: "PORT --\nLATENCY --ms"
+            rect: [108, 1, 19, 2]
             bind: net.info
+            text: "PORT --\nLAT --"
             align_h: left
             align_v: center
             line_step: 1
+
       - id: body
         rect: [0, 4, 128, 41]
         elements:
@@ -613,12 +442,219 @@ pages:
             type: rect
             rect: [0, 0, 128, 41]
             style: panel
-          - id: control_placeholder
+
+          - id: control_left_box
+            type: rect
+            rect: [1, 1, 61, 39]
+            style: default
+          - id: control_left_text
             type: text
-            rect: [4, 4, 32, 2]
-            text: "CONTROL PAGE (TODO)"
+            rect: [2, 2, 32, 16]
+            bind: control.targets_block
+            text: "--"
+            align_h: left
+            align_v: top
+            line_step: 1
+
+          - id: label_rods
+            type: text
+            rect: [35, 7, 12, 1]
+            text: "RODS"
             align_h: left
             align_v: center
+          - id: btn_rods_minus
+            type: button
+            rect: [47, 6.5, 6, 2]
+            label: "-5"
+            style: btn
+            on_click: control.adjust
+            key: rods
+            delta: -5
+          - id: btn_rods_plus
+            type: button
+            rect: [54, 6.5, 6, 2]
+            label: "+5"
+            style: btn
+            on_click: control.adjust
+            key: rods
+            delta: 5
+
+          - id: label_pump
+            type: text
+            rect: [35, 11, 12, 1]
+            text: "PUMP"
+            align_h: left
+            align_v: center
+          - id: btn_pump_minus
+            type: button
+            rect: [47, 10.5, 6, 2]
+            label: "-5"
+            style: btn
+            on_click: control.adjust
+            key: pump_speed
+            delta: -5
+          - id: btn_pump_plus
+            type: button
+            rect: [54, 10.5, 6, 2]
+            label: "+5"
+            style: btn
+            on_click: control.adjust
+            key: pump_speed
+            delta: 5
+
+          - id: label_valve
+            type: text
+            rect: [35, 15, 12, 1]
+            text: "VALVE"
+            align_h: left
+            align_v: center
+          - id: btn_valve_minus
+            type: button
+            rect: [47, 14.5, 6, 2]
+            label: "-5"
+            style: btn
+            on_click: control.adjust
+            key: valve
+            delta: -5
+          - id: btn_valve_plus
+            type: button
+            rect: [54, 14.5, 6, 2]
+            label: "+5"
+            style: btn
+            on_click: control.adjust
+            key: valve
+            delta: 5
+
+          - id: label_load
+            type: text
+            rect: [35, 19, 12, 1]
+            text: "LOAD"
+            align_h: left
+            align_v: center
+          - id: btn_load_minus
+            type: button
+            rect: [47, 18.5, 6, 2]
+            label: "-5"
+            style: btn
+            on_click: control.adjust
+            key: load
+            delta: -5
+          - id: btn_load_plus
+            type: button
+            rect: [54, 18.5, 6, 2]
+            label: "+5"
+            style: btn
+            on_click: control.adjust
+            key: load
+            delta: 5
+
+          - id: btn_scram_on
+            type: button
+            rect: [2, 21.5, 14, 2]
+            label: "SCRAM ON"
+            style: btn_active
+            on_click: control.set_bool
+            key: scram
+            value: true
+          - id: btn_scram_off
+            type: button
+            rect: [17, 21.5, 14, 2]
+            label: "SCRAM OFF"
+            style: btn
+            on_click: control.set_bool
+            key: scram
+            value: false
+
+          - id: btn_einj_on
+            type: button
+            rect: [2, 24.5, 14, 2]
+            label: "E-INJ ON"
+            style: btn_active
+            on_click: control.set_bool
+            key: emergency_inject
+            value: true
+          - id: btn_einj_off
+            type: button
+            rect: [17, 24.5, 14, 2]
+            label: "E-INJ OFF"
+            style: btn
+            on_click: control.set_bool
+            key: emergency_inject
+            value: false
+
+          - id: btn_scenario_cold
+            type: button
+            rect: [2, 28.5, 14, 2]
+            label: "Cold Start"
+            style: btn
+            on_click: scenario.set
+            name: cold_start
+          - id: btn_scenario_run
+            type: button
+            rect: [17, 28.5, 14, 2]
+            label: "Running"
+            style: btn
+            on_click: scenario.set
+            name: running
+
+          - id: control_right_box
+            type: rect
+            rect: [63, 1, 64, 39]
+            style: default
+          - id: control_right_text
+            type: text
+            rect: [64, 2, 62, 20]
+            bind: control.metrics_block
+            text: "--"
+            align_h: left
+            align_v: top
+            line_step: 1
+          - id: control_visual_title
+            type: text
+            rect: [64, 23, 24, 1]
+            text: "Actuator Bars"
+            align_h: left
+            align_v: center
+          - id: control_label_rods
+            type: text
+            rect: [64, 24, 10, 1]
+            text: "RODS"
+            align_h: left
+            align_v: center
+          - id: control_label_pump
+            type: text
+            rect: [64, 26, 10, 1]
+            text: "PUMP"
+            align_h: left
+            align_v: center
+          - id: control_label_valve
+            type: text
+            rect: [64, 28, 10, 1]
+            text: "VALVE"
+            align_h: left
+            align_v: center
+          - id: control_label_load
+            type: text
+            rect: [64, 30, 10, 1]
+            text: "LOAD"
+            align_h: left
+            align_v: center
+          - id: control_slot_rods
+            type: slot
+            rect: [74, 24, 51, 1]
+          - id: control_slot_pump
+            type: slot
+            rect: [74, 26, 51, 1]
+          - id: control_slot_valve
+            type: slot
+            rect: [74, 28, 51, 1]
+          - id: control_slot_load
+            type: slot
+            rect: [74, 30, 51, 1]
+          - id: control_slot_grid
+            type: slot
+            rect: [74, 33, 51, 1]
+
       - id: footer
         rect: [0, 45, 128, 3]
         elements:
@@ -626,35 +662,16 @@ pages:
             type: rect
             rect: [0, 0, 128, 3]
             style: default
-          - id: footer_block_1
-            type: rect
-            rect: [2, 1, 12, 1]
-            style: footer_block
-          - id: footer_block_2
-            type: rect
-            rect: [16, 1, 12, 1]
-            style: footer_block_active
-          - id: footer_block_3
-            type: rect
-            rect: [120, 1, 6, 1]
-            style: footer_block
-          - id: footer_text_1
+          - id: footer_info_text
             type: text
-            rect: [30, 1, 20, 1]
-            text: "谷雨计划"
-            text_color: Solar_Special
-            align_h: left
-            align_v: center
-          - id: footer_text_2
-            type: text
-            rect: [103, 1, 20, 1]
-            text: "Project Koyuu"
-            text_color: Solar_Default
+            rect: [2, 1, 124, 1]
+            bind: footer.info
+            text: "STATUS --"
             align_h: left
             align_v: center
 
   core:
-    focus_scope: nav
+    focus_scope: main
     groups:
       - id: nav
         rect: [0, 0, 128, 4]
@@ -663,58 +680,39 @@ pages:
             type: rect
             rect: [0, 0, 128, 4]
             style: default
-            thickness: 1
           - id: nav_status
             type: button
-            rect: [1.8, 0.8, 15.4, 2.4]
-            label: "状态指示"
+            rect: [1, 0.7, 14, 2.4]
+            label: "状态"
             style: nav_button
-            scope: nav
-            nav: { right: nav_diagram }
             on_click: go_page.status
           - id: nav_diagram
             type: button
-            rect: [17.8, 0.8, 15.4, 2.4]
-            label: "形式图"
+            rect: [16, 0.7, 14, 2.4]
+            label: "趋势"
             style: nav_button
-            scope: nav
-            nav: { left: nav_status, right: nav_control }
             on_click: go_page.diagram
           - id: nav_control
             type: button
-            rect: [33.8, 0.8, 15.4, 2.4]
-            label: "控制面板"
+            rect: [31, 0.7, 14, 2.4]
+            label: "控制"
             style: nav_button
-            scope: nav
-            nav: { left: nav_diagram, right: nav_core }
             on_click: go_page.control
           - id: nav_core
             type: button
-            rect: [49.8, 0.8, 15.4, 2.4]
-            label: "堆芯"
+            rect: [46, 0.7, 14, 2.4]
+            label: "故障"
             style: nav_button_active
-            scope: nav
-            nav: { left: nav_control }
             on_click: go_page.core
-          - id: logo_poly
-            type: poly
-            gx: 88
-            gy: 0
-            vertices_px:
-              - [0, 0]
-              - [56, 0]
-              - [64, 10]
-              - [8, 10]
-            style: default
-            thickness: 1
-          - id: net_indicator
-            type: rect
-            rect: [97, 1, 30, 2]
-            style: default
-            thickness: 2
+          - id: nav_title
+            type: text
+            rect: [62, 1, 34, 2]
+            text: "Fault Injection"
+            align_h: left
+            align_v: center
           - id: comms_indicator
             type: rect
-            rect: [97, 2, 10, 1]
+            rect: [97, 1, 10, 2]
             style: default
             bind_style:
               color: net.comms_color
@@ -722,22 +720,19 @@ pages:
               filled: net.comms_on
           - id: comms_text
             type: text
-            rect: [97, 2, 10, 1]
+            rect: [97, 1, 10, 2]
             text: "COMMS"
             align_h: center
             align_v: center
-          - id: net_info_box
-            type: rect
-            rect: [107, 1, 20, 2]
-            style: default
           - id: net_info_text
             type: text
-            rect: [108, 1, 18, 2]
-            text: "PORT --\nLATENCY --ms"
+            rect: [108, 1, 19, 2]
             bind: net.info
+            text: "PORT --\nLAT --"
             align_h: left
             align_v: center
             line_step: 1
+
       - id: body
         rect: [0, 4, 128, 41]
         elements:
@@ -745,12 +740,118 @@ pages:
             type: rect
             rect: [0, 0, 128, 41]
             style: panel
-          - id: core_placeholder
+
+          - id: core_faults_box
+            type: rect
+            rect: [1, 1, 54, 39]
+            style: default
+          - id: core_faults_text
             type: text
-            rect: [4, 4, 32, 2]
-            text: "CORE PAGE (TODO)"
+            rect: [2, 2, 52, 14]
+            bind: core.faults_block
+            text: "--"
+            align_h: left
+            align_v: top
+            line_step: 1
+
+          - id: btn_fault_pump
+            type: button
+            rect: [2, 20, 24, 2]
+            label: "pump_degraded"
+            style: btn
+            on_click: fault.toggle
+            name: pump_degraded
+          - id: btn_fault_leak
+            type: button
+            rect: [28, 20, 24, 2]
+            label: "coolant_leak"
+            style: btn
+            on_click: fault.toggle
+            name: coolant_leak
+
+          - id: btn_fault_valve
+            type: button
+            rect: [2, 23, 24, 2]
+            label: "valve_stuck"
+            style: btn
+            on_click: fault.toggle
+            name: valve_stuck
+          - id: btn_fault_pressure
+            type: button
+            rect: [28, 23, 24, 2]
+            label: "pressure_spike"
+            style: btn
+            on_click: fault.toggle
+            name: pressure_spike
+
+          - id: btn_fault_sensor
+            type: button
+            rect: [2, 26, 24, 2]
+            label: "sensor_drift"
+            style: btn
+            on_click: fault.toggle
+            name: sensor_drift
+          - id: btn_fault_fuel
+            type: button
+            rect: [28, 26, 24, 2]
+            label: "fuel_quality_low"
+            style: btn
+            on_click: fault.toggle
+            name: fuel_quality_low
+
+          - id: btn_fault_clear
+            type: button
+            rect: [2, 30, 24, 2]
+            label: "clear_all"
+            style: btn_active
+            on_click: fault.clear_all
+          - id: core_health_title
+            type: text
+            rect: [2, 33, 18, 1]
+            text: "Health Bars"
             align_h: left
             align_v: center
+          - id: core_label_h_core
+            type: text
+            rect: [2, 34, 8, 1]
+            text: "CORE"
+            align_h: left
+            align_v: center
+          - id: core_label_h_cooling
+            type: text
+            rect: [2, 35.5, 8, 1]
+            text: "COOL"
+            align_h: left
+            align_v: center
+          - id: core_label_h_steam
+            type: text
+            rect: [2, 37, 8, 1]
+            text: "STM"
+            align_h: left
+            align_v: center
+          - id: core_slot_h_core
+            type: slot
+            rect: [10, 34, 42, 1]
+          - id: core_slot_h_cooling
+            type: slot
+            rect: [10, 35.5, 42, 1]
+          - id: core_slot_h_steam
+            type: slot
+            rect: [10, 37, 42, 1]
+
+          - id: core_events_box
+            type: rect
+            rect: [56, 1, 71, 39]
+            style: default
+          - id: core_events_text
+            type: text
+            rect: [57, 2, 69, 37]
+            bind: core.events_block
+            text: "--"
+            align_h: left
+            align_v: top
+            line_step: 1
+
       - id: footer
         rect: [0, 45, 128, 3]
         elements:
@@ -758,29 +859,10 @@ pages:
             type: rect
             rect: [0, 0, 128, 3]
             style: default
-          - id: footer_block_1
-            type: rect
-            rect: [2, 1, 12, 1]
-            style: footer_block
-          - id: footer_block_2
-            type: rect
-            rect: [16, 1, 12, 1]
-            style: footer_block_active
-          - id: footer_block_3
-            type: rect
-            rect: [120, 1, 6, 1]
-            style: footer_block
-          - id: footer_text_1
+          - id: footer_info_text
             type: text
-            rect: [30, 1, 20, 1]
-            text: "谷雨计划"
-            text_color: Solar_Special
-            align_h: left
-            align_v: center
-          - id: footer_text_2
-            type: text
-            rect: [103, 1, 20, 1]
-            text: "Project Koyuu"
-            text_color: Solar_Default
+            rect: [2, 1, 124, 1]
+            bind: footer.info
+            text: "STATUS --"
             align_h: left
             align_v: center

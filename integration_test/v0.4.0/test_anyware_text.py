@@ -62,8 +62,9 @@ def main():
         focusable=False,
         pressable=False,
     )
+    GUI.reset_overlays()
     btn.render(ctx)
-    assert GUI.screen[0][1] == "A"
+    assert len(GUI.super_text_queue) == 1
 
     print("Anyware text tests: PASS")
 

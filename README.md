@@ -107,6 +107,11 @@ Anyware integration test v0.0.9 (Reactor UI):
 python3 integration_test/v0.0.9/reactor_backend.py --scenario cold_start
 ```
 
+Anyware integration backend logic regression (no UI):
+```bash
+python3 integration_test/v0.0.9/test_reactor_backend_logic.py
+```
+
 ```bash
 python3 integration_test/v0.0.9/app/app_reactor_ui.py
 ```

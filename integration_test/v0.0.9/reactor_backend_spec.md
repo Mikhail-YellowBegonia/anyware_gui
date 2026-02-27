@@ -16,10 +16,13 @@ Doc purpose: list all available inputs/outputs and summarize the simplified reac
 - `GET /state`
 - `GET /metrics`
 - `GET /catalog`
+- `GET /events`
+- `GET /history`
 - `POST /control`
 - `POST /scenario`
 - `POST /fault`
 - `POST /sim`
+- `POST /action`
 
 ## Output: `GET /state`
 
@@ -53,6 +56,9 @@ Response shape:
 - `alarms`: active alarm codes.
 - `faults`: active fault keys.
 - `health`: subsystem health scores.
+- `mission`: pseudo-game mission state (`phase`, `score`, `steps`, `actions_ready`).
+- `alarm_state`: alarm list with acknowledge state.
+- `events_tail`: recent event entries for lightweight UI updates.
 
 ### `controls`
 
@@ -109,6 +115,22 @@ Response shape:
 - `steam`: 40–100
 - `sensors`: 40–100
 
+### `mission`
+
+- `phase`: current mission phase (`startup_precheck`, `startup_neutron_rise`, `turbine_spinup`, `grid_sync`, `power_hold`, `stable_operation`, `emergency_recovery`).
+- `objective`: current objective text.
+- `score`: operator score (0+).
+- `stable_time_s`: accumulated stable operation time.
+- `steps`: startup checklist booleans.
+- `actions_ready`: UI hints for action buttons.
+
+### `alarm_state`
+
+Each item:
+- `code`: alarm code
+- `severity`: `critical` / `warning` / `info`
+- `acknowledged`: whether operator acknowledged the alarm
+
 ## Output: `GET /metrics`
 
 Response shape:
@@ -133,12 +155,44 @@ Response shape:
 Notes:
 - `status` here is only `NORMAL` or `SCRAM`.
 - Use this endpoint for high-frequency UI polling.
+- Includes `phase`, `score`, `grid_stability_pct`, `thermal_margin_c`, and `alarm_count`.
 
 ## Output: `GET /catalog`
 
 - `scenarios`: available scenario names.
 - `faults`: available fault keys and descriptions.
 - `controls`: numeric ranges and types.
+- `actions`: operator actions and descriptions.
+
+## Output: `GET /events`
+
+Query params:
+- `limit`: 1–200 (default 30)
+- `severity`: optional filter (`critical` / `warning` / `info`)
+
+Response:
+```json
+{
+  "ok": true,
+  "events": [
+    {
+      "time_s": 42.6,
+      "code": "ALARM_RAISED",
+      "severity": "warning",
+      "message": "Alarm raised: LOW_COOLANT_FLOW",
+      "details": { "alarm": "LOW_COOLANT_FLOW" }
+    }
+  ]
+}
+```
+
+## Output: `GET /history`
+
+Query params:
+- `limit`: 1–240 (default 120)
+
+Response items contain:
+- `time_s`, `status`, `phase`, `power_mw`, `core_temp_c`, `pressure_mpa`, `electric_mw`, `alarm_count`, `score`
 
 ## Input: `POST /control`
 
@@ -178,6 +232,26 @@ Payload:
 - `speed`: 0.1–5.0
 
 Returns full `state`.
+
+## Input: `POST /action`
+
+Payload:
+- `name`: action name
+
+Supported actions:
+- `ack_alarms`
+- `quick_start`
+- `stabilize`
+- `clear_scram`
+
+Response:
+```json
+{
+  "ok": true,
+  "message": "Quick-start setpoints applied",
+  "state": { ... }
+}
+```
 
 ## Reactor Principles (Simplified, UI-Friendly)
 
