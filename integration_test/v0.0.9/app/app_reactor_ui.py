@@ -18,7 +18,8 @@ from _bootstrap import FONTS_DIR, ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from core.anyware import AnywareApp, DialGauge, MeterBar
+from core.anyware import AnywareApp, Button, DialGauge, MeterBar
+from core.anyware.component import ComponentGroup
 from core.anyware.layout_dsl import LayoutPage, LayoutReloader
 
 from reactor_client import ReactorClient
@@ -49,6 +50,98 @@ class VisualLayoutPage(LayoutPage):
         components = list(self._plan.components)
         components.extend(visuals)
         self.set_components(ctx, components)
+
+
+class DynamicAlarmChipPanel(ComponentGroup):
+    def __init__(
+        self,
+        *,
+        panel_id: str,
+        gx: float,
+        gy: float,
+        gw: float,
+        gh: float,
+        alarm_provider: Callable[[], list[dict]],
+        on_select_alarm: Callable[[str], None] | None = None,
+        scope: str = "main",
+    ) -> None:
+        super().__init__(component_id=panel_id, visible=True, enabled=True)
+        self.gx = float(gx)
+        self.gy = float(gy)
+        self.gw = float(gw)
+        self.gh = float(gh)
+        self._alarm_provider = alarm_provider
+        self._on_select_alarm = on_select_alarm
+        self.scope = scope
+        self._alarm_map: dict[str, dict] = {}
+        self._signature: tuple[str, ...] = ()
+
+    def _chip_status(self, code: str) -> str:
+        item = self._alarm_map.get(code, {})
+        return "ACK" if bool(item.get("acknowledged")) else "NEW"
+
+    def _chip_color(self, code: str) -> str:
+        item = self._alarm_map.get(code, {})
+        severity = str(item.get("severity", "info"))
+        if severity == "critical":
+            return "Solar_Special"
+        return "Solar_Default"
+
+    def _build_children(self, ctx, alarms: list[dict]) -> list[Any]:
+        if not alarms:
+            return []
+
+        cols = 2 if self.gw >= 18.0 else 1
+        row_h = 1.6
+        rows = max(1, int(self.gh // row_h))
+        max_items = max(1, cols * rows)
+        items = alarms[:max_items]
+        chip_gw = max(5.0, (self.gw - (cols - 1) * 0.8) / cols)
+
+        children: list[Any] = []
+        for idx, item in enumerate(items):
+            code = str(item.get("code", f"ALARM_{idx}"))
+            r = idx // cols
+            c = idx % cols
+            chip_gx = self.gx + c * (chip_gw + 0.8)
+            chip_gy = self.gy + r * row_h
+            chip_w_px = max(26.0, float(ctx.gx(chip_gx + chip_gw) - ctx.gx(chip_gx)))
+            chip_h_px = max(12.0, float(ctx.gy(chip_gy + 1.2) - ctx.gy(chip_gy)))
+            label = code.replace("FAULT_", "F:")[:18]
+            children.append(
+                Button(
+                    button_id=f"alarm_chip::{code}",
+                    label=label,
+                    gx=chip_gx,
+                    gy=chip_gy,
+                    width_px=chip_w_px,
+                    height_px=chip_h_px,
+                    scope=self.scope,
+                    color=self._chip_color(code),
+                    nav={},
+                    on_select=(None if self._on_select_alarm is None else (lambda _btn, _ctx, alarm=code: self._on_select_alarm(alarm))),
+                    pressable=self._on_select_alarm is not None,
+                    focusable=True,
+                    status=(lambda _btn, _ctx, alarm=code: self._chip_status(alarm)),
+                    status_color_map={"NEW": "Solar_Special", "ACK": "Solar_Default"},
+                    status_default_color="Solar_Default",
+                    label_align_h="center",
+                    label_align_v="center",
+                    label_line_step=1,
+                )
+            )
+        return children
+
+    def update(self, ctx, dt: float) -> None:
+        super().update(ctx, dt)
+        alarms = self._alarm_provider()
+        self._alarm_map = {str(item.get("code", "")): dict(item) for item in alarms}
+        signature = tuple(str(item.get("code", "")) for item in alarms)
+        if signature == self._signature:
+            return
+        self._signature = signature
+        next_children = self._build_children(ctx, alarms)
+        self.reconcile_children(ctx, next_children, ensure_focus=True)
 
 
 class ReactorApp:
@@ -328,6 +421,10 @@ class ReactorApp:
         result = self.client.post_action(name)
         self._post_result_to_state(result, default_ok=f"ACTION {name}")
 
+    def _action_ack_alarm_chip(self, _code: str) -> None:
+        result = self.client.post_action("ack_alarms")
+        self._post_result_to_state(result, default_ok="ALARMS ACK")
+
     def _state_controls(self) -> dict:
         if isinstance(self._state, dict):
             controls = self._state.get("controls")
@@ -354,6 +451,13 @@ class ReactorApp:
             faults = self._state.get("faults")
             if isinstance(faults, list):
                 return [str(x) for x in faults]
+        return []
+
+    def _state_alarm_entries(self) -> list[dict]:
+        if isinstance(self._state, dict):
+            alarm_state = self._state.get("alarm_state")
+            if isinstance(alarm_state, list):
+                return [item for item in alarm_state if isinstance(item, dict)]
         return []
 
     def _state_health(self) -> dict:
@@ -395,6 +499,19 @@ class ReactorApp:
         width_px = max(6.0, float(ctx.gx(gx + gw) - ctx.gx(gx)))
         height_px = max(4.0, float(ctx.gy(gy + gh) - ctx.gy(gy)))
         return (gx, gy, width_px, height_px)
+
+    def _slot_grid(self, plan: Any, slot_id: str) -> tuple[float, float, float, float] | None:
+        slots = getattr(plan, "slots", {})
+        if not isinstance(slots, dict):
+            return None
+        slot = slots.get(slot_id)
+        if not isinstance(slot, dict):
+            return None
+        gx = float(slot.get("gx", 0.0))
+        gy = float(slot.get("gy", 0.0))
+        gw = float(slot.get("gw", 0.0))
+        gh = float(slot.get("gh", 0.0))
+        return (gx, gy, gw, gh)
 
     def _build_meter(
         self,
@@ -489,6 +606,22 @@ class ReactorApp:
                     max_value=100.0,
                     style="both",
                     color="Solar_Special",
+                )
+            )
+
+        chip_slot = self._slot_grid(plan, "status_slot_alarm_dynamic")
+        if chip_slot is not None:
+            gx, gy, gw, gh = chip_slot
+            visuals.append(
+                DynamicAlarmChipPanel(
+                    panel_id="status_alarm_dynamic",
+                    gx=gx,
+                    gy=gy,
+                    gw=gw,
+                    gh=gh,
+                    alarm_provider=self._state_alarm_entries,
+                    on_select_alarm=self._action_ack_alarm_chip,
+                    scope="main",
                 )
             )
         return visuals
