@@ -18,7 +18,7 @@ from _bootstrap import FONTS_DIR, ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from core.anyware import AnywareApp, Button, DialGauge, MeterBar
+from core.anyware import AnywareApp, Button, DialGauge, MeterBar, TrendLine
 from core.anyware.component import ComponentGroup
 from core.anyware.layout_dsl import LayoutPage, LayoutReloader
 
@@ -242,7 +242,13 @@ class ReactorApp:
                 bindings=bindings,
                 visual_factory=self._build_status_visuals,
             ),
-            VisualLayoutPage("diagram", layout=self.layout, actions=actions, bindings=bindings),
+            VisualLayoutPage(
+                "diagram",
+                layout=self.layout,
+                actions=actions,
+                bindings=bindings,
+                visual_factory=self._build_diagram_visuals,
+            ),
             VisualLayoutPage(
                 "control",
                 layout=self.layout,
@@ -549,6 +555,41 @@ class ReactorApp:
             padding_px=1.0,
         )
 
+    def _build_trend(
+        self,
+        ctx,
+        plan: Any,
+        *,
+        trend_id: str,
+        slot_id: str,
+        values_fn: Callable[[Any], list[float]],
+        min_value: float,
+        max_value: float,
+        color: str = "Solar_Special",
+    ) -> TrendLine | None:
+        slot = self._slot_rect(ctx, plan, slot_id)
+        if slot is None:
+            return None
+        gx, gy, width_px, height_px = slot
+        return TrendLine(
+            trend_id=trend_id,
+            gx=gx,
+            gy=gy,
+            width_px=width_px,
+            height_px=height_px,
+            values=values_fn,
+            min_value=min_value,
+            max_value=max_value,
+            max_points=120,
+            sample_mode="tail",
+            color=color,
+            line_thickness=1.0,
+            border_color="Solar_Default",
+            border_thickness=1.0,
+            padding_px=1.0,
+            fill=False,
+        )
+
     def _build_status_visuals(self, ctx, plan: Any) -> list[Any]:
         visuals: list[Any] = []
         for meter in (
@@ -624,6 +665,41 @@ class ReactorApp:
                     scope="main",
                 )
             )
+        return visuals
+
+    def _build_diagram_visuals(self, ctx, plan: Any) -> list[Any]:
+        visuals: list[Any] = []
+        for trend in (
+            self._build_trend(
+                ctx,
+                plan,
+                trend_id="trend_power",
+                slot_id="trend_slot_power",
+                values_fn=lambda _c: self._history_series("power_mw"),
+                min_value=0.0,
+                max_value=3000.0,
+            ),
+            self._build_trend(
+                ctx,
+                plan,
+                trend_id="trend_temp",
+                slot_id="trend_slot_temp",
+                values_fn=lambda _c: self._history_series("core_temp_c"),
+                min_value=220.0,
+                max_value=880.0,
+            ),
+            self._build_trend(
+                ctx,
+                plan,
+                trend_id="trend_press",
+                slot_id="trend_slot_press",
+                values_fn=lambda _c: self._history_series("pressure_mpa"),
+                min_value=8.0,
+                max_value=19.0,
+            ),
+        ):
+            if trend is not None:
+                visuals.append(trend)
         return visuals
 
     def _build_control_visuals(self, ctx, plan: Any) -> list[Any]:
@@ -795,6 +871,16 @@ class ReactorApp:
             code = str(event.get("code", "EV"))
             lines.append(f"t={t} {code[:28]}")
         return "\n".join(lines)
+
+    def _history_series(self, key: str) -> list[float]:
+        out: list[float] = []
+        for row in self._history:
+            if not isinstance(row, dict):
+                continue
+            value = row.get(key)
+            if isinstance(value, (int, float)):
+                out.append(float(value))
+        return out
 
     def _trend_history_block(self) -> str:
         lines = ["[History Snapshot]", " t    status   MW    T(C)   P(MPa) Elec  A  Score"]

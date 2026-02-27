@@ -344,9 +344,42 @@ pages:
             type: rect
             rect: [1, 1, 86, 39]
             style: default
+          - id: trend_visual_title
+            type: text
+            rect: [3, 2, 26, 1]
+            text: "Trend Line"
+            align_h: left
+            align_v: center
+          - id: trend_label_power
+            type: text
+            rect: [3, 3.6, 12, 1]
+            text: "PWR"
+            align_h: left
+            align_v: center
+          - id: trend_label_temp
+            type: text
+            rect: [3, 6.0, 12, 1]
+            text: "TEMP"
+            align_h: left
+            align_v: center
+          - id: trend_label_press
+            type: text
+            rect: [3, 8.4, 12, 1]
+            text: "PRES"
+            align_h: left
+            align_v: center
+          - id: trend_slot_power
+            type: slot
+            rect: [14, 3.0, 71.5, 2.0]
+          - id: trend_slot_temp
+            type: slot
+            rect: [14, 5.4, 71.5, 2.0]
+          - id: trend_slot_press
+            type: slot
+            rect: [14, 7.8, 71.5, 2.0]
           - id: trend_history_text
             type: text
-            rect: [2, 2, 84, 37]
+            rect: [2, 11, 84, 28]
             bind: trend.history_block
             text: "--"
             align_h: left

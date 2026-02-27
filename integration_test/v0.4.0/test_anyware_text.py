@@ -12,7 +12,7 @@ import pygame
 
 from core import GUI
 from core.anyware.context import AnywareContext
-from core.anyware import Button, Label
+from core.anyware import Button, Label, TrendLine
 
 
 def _init_fonts():
@@ -65,6 +65,21 @@ def main():
     GUI.reset_overlays()
     btn.render(ctx)
     assert len(GUI.super_text_queue) == 1
+
+    GUI.reset_overlays()
+    trend = TrendLine(
+        trend_id="trend_test",
+        gx=0,
+        gy=0,
+        width_px=48,
+        height_px=16,
+        values=[0.0, 1.0, 0.5, 1.2, 0.8],
+        min_value=0.0,
+        max_value=2.0,
+        border_color="CRT_Cyan",
+    )
+    trend.render(ctx)
+    assert len(GUI.line_queue) > 0
 
     print("Anyware text tests: PASS")
 
