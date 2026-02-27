@@ -4,7 +4,7 @@ from .page import Page, PageRouter, PageStack
 from .runtime import AnywareApp
 from .text import Label, Text
 from .widgets import Button, ButtonArray, CheckboxMenu
-from .instruments import DialGauge, MeterBar, SegmentDisplay, ValueText
+from .instruments import DialGauge, MeterBar, SegmentDisplay, TrendLine, ValueText
 from .id import IdFactory, stable_component_id
 from .layout_dsl import LayoutPage, LayoutReloader
 from .llm_page import LLMPage
@@ -40,6 +40,7 @@ __all__ = (
     "MeterBar",
     "DialGauge",
     "SegmentDisplay",
+    "TrendLine",
     "IdFactory",
     "stable_component_id",
     "LayoutReloader",

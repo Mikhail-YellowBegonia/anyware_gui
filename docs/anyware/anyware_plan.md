@@ -116,7 +116,7 @@ No MVP tagging is listed here; see Roadmap/Milestones for timing expectations.
 - `MeterBar` (bar/segments)
 - `DialGauge` (round/fan via config)
 - `SegmentDisplay` (P0.5)
-- `TrendLine` (post-MVP)
+- `TrendLine`
 
 ### Feedback & Utility
 - `Toast`

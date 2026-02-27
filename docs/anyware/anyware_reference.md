@@ -51,7 +51,7 @@ Section numbering mirrors the plan to avoid cross-indexing.
 - DialGauge merges round/fan/arc gauges into one configurable component.
 - StatusLight is modeled as a non-pressable `Button` with status/lighting.
 - SegmentDisplay stays separate (design-driven logic, 7-seg baseline).
-- TrendLine is deferred (state ownership + sampling policy).
+- TrendLine is now available as a lightweight sparkline component (stateless render).
 
 ## 4) Capability Gap Review (GUI vs Anyware vs N/A)
 Method: define desired feature -> decide if current GUI can directly support -> locate missing responsibility.
@@ -446,6 +446,12 @@ ValueText:
 MeterBar:
 - Linear meter (bar or segments).
 - Key parameters: `value`, `min_value`, `max_value`, `mode`, `segments`, `width_px`, `height_px`.
+
+TrendLine:
+- Sparkline-style trend visualization (stateless; caller owns series storage).
+- Key parameters: `values`, `min_value`, `max_value`, `max_points`, `sample_mode`,
+  `width_px`, `height_px`, `color`, `line_thickness`, `border_color`,
+  `padding_px`, `fill`, `fill_color`, `baseline_value`.
 
 DialGauge:
 - Arc gauge with needle/fill styles.

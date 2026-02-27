@@ -13,6 +13,23 @@ def _resolve_value(value, ctx):
     return value
 
 
+def _resolve_series(values, ctx) -> list[float]:
+    raw = values(ctx) if callable(values) else values
+    if raw is None:
+        return []
+    if isinstance(raw, (list, tuple)):
+        series = raw
+    else:
+        series = [raw]
+    out: list[float] = []
+    for item in series:
+        try:
+            out.append(float(item))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def _normalize_value(value, min_value: float, max_value: float) -> float:
     try:
         v = float(value)
@@ -207,6 +224,109 @@ class MeterBar(Component):
             self._draw_segments(ctx, x, y, w, h, norm)
             return
         self._draw_bar(ctx, x, y, w, h, norm)
+
+
+class TrendLine(Component):
+    """Sparkline-style trend line for small history series."""
+
+    def __init__(
+        self,
+        *,
+        trend_id: str | None = None,
+        gx: float = 0.0,
+        gy: float = 0.0,
+        width_px: float = 160.0,
+        height_px: float = 48.0,
+        values: list[float] | Callable[[object], list[float]] = (),
+        min_value: float | None = None,
+        max_value: float | None = None,
+        max_points: int | None = 120,
+        sample_mode: str = "tail",
+        color: str = "CRT_Cyan",
+        line_thickness: float = 1.0,
+        border_color: str | None = None,
+        border_thickness: float = 1.0,
+        padding_px: float = 2.0,
+        fill: bool = False,
+        fill_color: str | None = None,
+        baseline_value: float | None = None,
+        visible: bool = True,
+        enabled: bool = True,
+    ):
+        super().__init__(component_id=trend_id, visible=visible, enabled=enabled)
+        self.gx = float(gx)
+        self.gy = float(gy)
+        self.width_px = float(width_px)
+        self.height_px = float(height_px)
+        self.values = values
+        self.min_value = None if min_value is None else float(min_value)
+        self.max_value = None if max_value is None else float(max_value)
+        self.max_points = None if max_points is None else max(1, int(max_points))
+        self.sample_mode = str(sample_mode).lower()
+        self.color = color
+        self.line_thickness = float(line_thickness)
+        self.border_color = border_color
+        self.border_thickness = float(border_thickness)
+        self.padding_px = max(0.0, float(padding_px))
+        self.fill = bool(fill)
+        self.fill_color = fill_color or color
+        self.baseline_value = baseline_value
+
+    def _rect_px(self, ctx):
+        return (ctx.gx(self.gx), ctx.gy(self.gy), self.width_px, self.height_px)
+
+    def _sample_series(self, series: list[float]) -> list[float]:
+        if not series:
+            return []
+        if self.max_points is None or len(series) <= self.max_points:
+            return series
+        if self.sample_mode == "stride":
+            step = max(1, len(series) // self.max_points)
+            return series[::step][: self.max_points]
+        # default: tail
+        return series[-self.max_points :]
+
+    def _normalize_series(self, series: list[float]) -> tuple[list[float], float, float]:
+        if not series:
+            return ([], 0.0, 1.0)
+        min_v = min(series) if self.min_value is None else self.min_value
+        max_v = max(series) if self.max_value is None else self.max_value
+        if max_v == min_v:
+            max_v = min_v + 1.0
+        out = [(v - min_v) / (max_v - min_v) for v in series]
+        return ([max(0.0, min(1.0, v)) for v in out], min_v, max_v)
+
+    def render(self, ctx) -> None:
+        if not self.visible:
+            return
+        x, y, w, h = self._rect_px(ctx)
+        if self.border_color:
+            ctx.draw_rect(self.border_color, x, y, w, h, filled=False, thickness=self.border_thickness)
+        series = _resolve_series(self.values, ctx)
+        series = self._sample_series(series)
+        if not series:
+            return
+        norm, min_v, max_v = self._normalize_series(series)
+        inner_x = x + self.padding_px
+        inner_y = y + self.padding_px
+        inner_w = max(1.0, w - self.padding_px * 2)
+        inner_h = max(1.0, h - self.padding_px * 2)
+        count = len(norm)
+        if count == 1:
+            px = inner_x
+            py = inner_y + (1.0 - norm[0]) * inner_h
+            ctx.draw_rect(self.color, px, py, 2.0, 2.0, filled=True, thickness=1)
+            return
+        step_x = inner_w / max(1, count - 1)
+        points = [(idx * step_x, (1.0 - v) * inner_h) for idx, v in enumerate(norm)]
+        if self.fill:
+            base_val = min_v if self.baseline_value is None else float(self.baseline_value)
+            base_norm = (base_val - min_v) / (max_v - min_v)
+            base_norm = max(0.0, min(1.0, base_norm))
+            base_y = (1.0 - base_norm) * inner_h
+            poly = points + [(points[-1][0], base_y), (points[0][0], base_y)]
+            ctx.draw_poly(poly, self.fill_color, inner_x, inner_y, filled=True, thickness=1)
+        ctx.draw_poly(points, self.color, inner_x, inner_y, filled=False, thickness=self.line_thickness)
 
 
 class DialGauge(Component):
