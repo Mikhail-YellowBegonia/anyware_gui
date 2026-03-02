@@ -38,7 +38,7 @@ def _read_prompt(name: str) -> str:
 
 def _build_system_prompt() -> str:
     parts = []
-    for name in ("system.txt", "tools_info.txt"):
+    for name in ("system.txt", "tools_info.txt", "plain.txt"):
         content = _read_prompt(name)
         if content:
             parts.append(content)
